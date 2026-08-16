@@ -326,8 +326,13 @@ def demo_live():
 
     # Use a random client_id so we don't kick the main app off the broker
     client_id = f"tv1-demo-live-{uuid.uuid4().hex[:8]}"
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=client_id)
+    transport_protocol = "websockets" if settings.mqtt_port == 443 else "tcp"
     
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=client_id, transport=transport_protocol)
+    
+    if transport_protocol == "websockets":
+        client.ws_set_options(path="/mqtt")
+        
     if settings.mqtt_username:
         client.username_pw_set(settings.mqtt_username, settings.mqtt_password)
     if settings.mqtt_tls:

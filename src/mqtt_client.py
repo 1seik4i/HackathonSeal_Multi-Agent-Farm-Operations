@@ -21,7 +21,12 @@ class MQTTIngestionClient:
         self.store = store
         self.mongo_store = mongo_store
         self.processor = IoTDataProcessor(stale_after_seconds=settings.stale_after_seconds)
-        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="farmops-team-2")
+        transport_protocol = "websockets" if settings.mqtt_port == 443 else "tcp"
+        self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="farmops-team-2", transport=transport_protocol)
+        
+        if transport_protocol == "websockets":
+            self.client.ws_set_options(path="/mqtt")
+            
         self.client.on_connect = self._on_connect
         self.client.on_message = self._on_message
         self.client.on_disconnect = self._on_disconnect
