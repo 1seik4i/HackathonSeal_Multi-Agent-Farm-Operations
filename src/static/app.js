@@ -125,11 +125,11 @@ function updateSensorFigures(data) {
   if (soilStatus && soilTag) {
     if (soilVal !== "—" && Number(soilVal) < 35) {
       soilStatus.className = "figure-badge badge-warn";
-      soilStatus.textContent = "⚠️ ĐẤT KHÔ (CẦN TƯỚI)";
+      soilStatus.textContent = "ĐẤT KHÔ (CẦN TƯỚI)";
       soilTag.textContent = "Độ ẩm < 35% · Khuyên dùng Kế hoạch tưới";
     } else if (soilVal !== "—") {
       soilStatus.className = "figure-badge badge-ok";
-      soilStatus.textContent = "✅ ĐỦ ẨM AN TOÀN";
+      soilStatus.textContent = "ĐỦ ẨM AN TOÀN";
       soilTag.textContent = "Độ ẩm >= 35% · Đất đủ độ ẩm";
     }
   }
@@ -149,7 +149,7 @@ function updateSensorFigures(data) {
   if (wBar) wBar.style.width = `${Math.max(0, Math.min(100, (Number(wTemp) / 50) * 100 || 0))}%`;
   if (wStatus && wTag) {
     wStatus.className = "figure-badge badge-ok";
-    wStatus.textContent = "☀️ THỜI TIẾT";
+    wStatus.textContent = "THỜI TIẾT ĐẠT";
     wTag.textContent = `Nhiệt độ ${wTemp}°C · Độ ẩm không khí ${wHum}%`;
   }
 
@@ -169,11 +169,11 @@ function updateSensorFigures(data) {
   if (pStatus && pTag) {
     if (Number(pFlow) > 0) {
       pStatus.className = "figure-badge badge-ok";
-      pStatus.textContent = "💧 BƠM ĐANG CHẠY";
+      pStatus.textContent = "BƠM ĐANG CHẠY";
       pTag.textContent = `Lưu lượng dòng chảy: ${pFlow} L/min`;
     } else {
       pStatus.className = "figure-badge badge-info";
-      pStatus.textContent = "⏸️ BƠM SẴN SÀNG";
+      pStatus.textContent = "BƠM SẴN SÀNG";
       pTag.textContent = "Máy bơm ở trạng thái chờ lệnh";
     }
   }
@@ -192,11 +192,11 @@ function updateSensorFigures(data) {
   if (phStatus && phTag) {
     if (phVal !== "—" && Number(phVal) >= 5.5 && Number(phVal) <= 7.5) {
       phStatus.className = "figure-badge badge-ok";
-      phStatus.textContent = "✅ pH LÝ TƯỞNG";
+      phStatus.textContent = "pH LÝ TƯỞNG";
       phTag.textContent = `Mức pH đất ${phVal} thuộc khoảng an toàn (5.5 - 7.5)`;
     } else if (phVal !== "—") {
       phStatus.className = "figure-badge badge-warn";
-      phStatus.textContent = "⚠️ pH LỆCH CHUẨN";
+      phStatus.textContent = "pH LỆCH CHUẨN";
       phTag.textContent = `Mức pH đất ${phVal} nằm ngoài dải an toàn`;
     }
   }
@@ -214,11 +214,11 @@ function updateSensorFigures(data) {
   if (tStatus && tTag) {
     if (tVal !== "—" && Number(tVal) >= 30) {
       tStatus.className = "figure-badge badge-ok";
-      tStatus.textContent = "✅ NƯỚC ĐỦ DÙNG";
+      tStatus.textContent = "NƯỚC ĐỦ DÙNG";
       tTag.textContent = `Mực nước bồn chứa đạt ${tVal}% (>= 30%)`;
     } else if (tVal !== "—") {
       tStatus.className = "figure-badge badge-warn";
-      tStatus.textContent = "⚠️ BỒN CẠN NƯỚC";
+      tStatus.textContent = "BỒN CẠN NƯỚC";
       tTag.textContent = `Mực nước bồn chứa thấp (${tVal}% < 30%)`;
     }
   }
@@ -235,7 +235,7 @@ function updateSensorFigures(data) {
   if (sBar) sBar.style.width = `${Math.max(0, Math.min(100, (Number(sVal) / 100000) * 100 || 0))}%`;
   if (sStatus && sTag) {
     sStatus.className = "figure-badge badge-ok";
-    sStatus.textContent = "☀️ BỨC XẠ XÁC THỰC";
+    sStatus.textContent = "BỨC XẠ XÁC THỰC";
     sTag.textContent = `Bức xạ ánh sáng mặt trời đạt ${sVal} lux`;
   }
 }
