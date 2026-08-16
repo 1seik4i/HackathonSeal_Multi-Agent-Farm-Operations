@@ -28,6 +28,9 @@ load_dotenv()
 from src.data_processor import IoTDataProcessor
 from src.mqtt_client import MQTTIngestionClient
 from src.settings import settings
+import paho.mqtt.client as mqtt
+import uuid
+
 
 # ─── Helpers ──────────────────────────────────────────────────────────
 COLORS = {
@@ -310,8 +313,85 @@ def demo_mongodb():
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# MAIN
+# MAIN & LIVE MODE
 # ═══════════════════════════════════════════════════════════════════════
+
+def demo_live():
+    step_header(1, "CHẾ ĐỘ LIVE DATA (HỨNG DỮ LIỆU TỪ MQTT THẬT)")
+    print(f"  {c('Đang kết nối tới Broker:', 'CYAN')} {settings.mqtt_host}:{settings.mqtt_port}")
+    
+    if not settings.mqtt_host:
+        print(f"  {c('❌ Lỗi: Chưa cấu hình MQTT_BROKER_HOST trong file .env', 'RED')}")
+        return
+
+    # Use a random client_id so we don't kick the main app off the broker
+    client_id = f"tv1-demo-live-{uuid.uuid4().hex[:8]}"
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=client_id)
+    
+    if settings.mqtt_username:
+        client.username_pw_set(settings.mqtt_username, settings.mqtt_password)
+    if settings.mqtt_tls:
+        client.tls_set()
+
+    processor = IoTDataProcessor(stale_after_seconds=settings.stale_after_seconds)
+    
+    def on_connect(c, userdata, flags, rc, properties):
+        if rc.is_failure:
+            print(f"  {c('❌ Kết nối MQTT thất bại:', 'RED')} {rc}")
+        else:
+            print(f"  {c('✅ Kết nối MQTT THÀNH CÔNG!', 'GREEN')}")
+            c.subscribe(settings.mqtt_topic)
+            print(f"  {c('📡 Đang lắng nghe topic:', 'CYAN')} {settings.mqtt_topic}")
+            print(f"  {c('(Hãy chờ thiết bị thật bắn dữ liệu lên...)', 'DIM')}")
+            print("  " + "─"*60)
+
+    def on_message(c, userdata, msg):
+        try:
+            payload_str = msg.payload.decode()
+            payload = json.loads(payload_str)
+            
+            print("\n" + "═"*70)
+            print(f"  {c('📥 CÓ TIN NHẮN MỚI TỪ MQTT', 'BOLD', 'GREEN')}")
+            print("═"*70)
+            
+            show_json("1. INPUT GỐC (Raw Payload):", payload, "YELLOW")
+            
+            # Normalize
+            normalized = MQTTIngestionClient._normalize(payload)
+            
+            # Process
+            processed = processor.process(normalized.model_dump())
+            
+            # Khúc này không gọi store.ingest để tránh bị ghi đúp (vì app.py đang chạy và ghi rồi)
+            # Chúng ta chỉ trực quan hoá ra màn hình thôi
+            
+            show_json("2. OUTPUT SAU KHI ĐI QUA PIPELINE (Cho AI Agent):", processed, "GREEN")
+            
+            if not processed["quality"]["valid"]:
+                print(f"  {c('⚠️ DỮ LIỆU CÓ LỖI HOẶC BỊ CLAMP (Chặn rác thành công!)', 'RED')}")
+            elif processed["quality"]["freshness"] != "FRESH":
+                print(f"  {c('⏳ DỮ LIỆU CŨ (STALE)', 'YELLOW')}")
+            elif processed["quality"]["anomalies"]:
+                print(f"  {c('🚨 PHÁT HIỆN BẤT THƯỜNG (ANOMALY)', 'RED')}")
+            else:
+                print(f"  {c('✅ DỮ LIỆU ĐẸP, HOÀN HẢO!', 'CYAN')}")
+                
+            print("  " + "─"*60)
+            
+        except Exception as e:
+            print(f"  {c('❌ Lỗi xử lý tin nhắn:', 'RED')} {e}")
+
+    client.on_connect = on_connect
+    client.on_message = on_message
+    
+    client.connect(settings.mqtt_host, settings.mqtt_port, keepalive=60)
+    
+    try:
+        client.loop_forever()
+    except KeyboardInterrupt:
+        print(f"\n  {c('Đã dừng Live Mode.', 'YELLOW')}")
+
+
 def main():
     print(c("""
     ╔═══════════════════════════════════════════════════════════════╗
@@ -320,43 +400,45 @@ def main():
     ╚═══════════════════════════════════════════════════════════════╝
     """, "BOLD"))
     
-    demo_normal()
-    input(f"\n  {c('Nhấn Enter để tiếp tục...', 'DIM')}")
+    print("  Chọn chế độ chạy:")
+    print("  1. Chạy MOCK DATA (để thuyết trình các case lỗi: Stale, Anomaly, Clamp)")
+    print("  2. Chạy LIVE DATA (Hứng trực tiếp dữ liệu thật từ MQTT)")
+    print("")
     
-    demo_stale()
-    input(f"\n  {c('Nhấn Enter để tiếp tục...', 'DIM')}")
+    choice = input("  Nhập số (1 hoặc 2): ").strip()
     
-    demo_anomaly()
-    input(f"\n  {c('Nhấn Enter để tiếp tục...', 'DIM')}")
-    
-    demo_out_of_range()
-    input(f"\n  {c('Nhấn Enter để tiếp tục...', 'DIM')}")
-    
-    demo_mongodb()
-    
-    banner("KẾT THÚC DEMO", "═")
-    print(f"""
-  {c('Tổng kết luồng TV1:', 'BOLD')}
-  
-  1. Sensor gửi raw JSON → MQTT broker / HTTP API
-  2. mqtt_client.py: _normalize() → TelemetryMessage (chuẩn hoá)
-  3. data_processor.py: process() → ProcessedTelemetry (validate + enrich)
-     ├── Validate: device_code, metrics, timestamp
-     ├── Range Check: giá trị trong ngưỡng vật lý
-     ├── Freshness: FRESH / STALE / MISSING  
-     ├── Anomaly: phát hiện bất thường
-     └── Clamp: sửa giá trị phi lý
-  4. Lưu SQLite (cho TV2/TV3) + MongoDB Atlas (cho TV1)
-  5. TV2 nhận ProcessedTelemetry → AI Agents quyết định
-
-  {c('Output cho TV2 luôn có:', 'BOLD')}
-  • timestamp (float) — thời gian đo
-  • metrics (dict) — giá trị đã clean
-  • quality.freshness — FRESH / STALE / MISSING
-  • quality.anomalies — danh sách bất thường
-  • quality.valid — True / False
-""")
-
+    if choice == "2":
+        demo_live()
+    else:
+        demo_normal()
+        input(f"\n  {c('Nhấn Enter để tiếp tục...', 'DIM')}")
+        
+        demo_stale()
+        input(f"\n  {c('Nhấn Enter để tiếp tục...', 'DIM')}")
+        
+        demo_anomaly()
+        input(f"\n  {c('Nhấn Enter để tiếp tục...', 'DIM')}")
+        
+        demo_out_of_range()
+        input(f"\n  {c('Nhấn Enter để tiếp tục...', 'DIM')}")
+        
+        demo_mongodb()
+        
+        banner("KẾT THÚC DEMO", "═")
+        print(f"""
+      {c('Tổng kết luồng TV1:', 'BOLD')}
+      
+      1. Sensor gửi raw JSON → MQTT broker / HTTP API
+      2. mqtt_client.py: _normalize() → TelemetryMessage (chuẩn hoá)
+      3. data_processor.py: process() → ProcessedTelemetry (validate + enrich)
+         ├── Validate: device_code, metrics, timestamp
+         ├── Range Check: giá trị trong ngưỡng vật lý
+         ├── Freshness: FRESH / STALE / MISSING  
+         ├── Anomaly: phát hiện bất thường
+         └── Clamp: sửa giá trị phi lý
+      4. Lưu SQLite (cho TV2/TV3) + MongoDB Atlas (cho TV1)
+      5. TV2 nhận ProcessedTelemetry → AI Agents quyết định
+    """)
 
 if __name__ == "__main__":
     main()
