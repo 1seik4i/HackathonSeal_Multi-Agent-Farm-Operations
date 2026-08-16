@@ -106,19 +106,156 @@ function renderExecutiveSummary() {
   }
 }
 
+function updateSensorFigures(data) {
+  if (!document.querySelector("#sensor-figures")) return;
+
+  // 1. SOIL_01
+  const soil = data["SOIL_01"]?.metrics || {};
+  const soilVal = soil.soil_moisture ?? "—";
+  const soilTemp = soil.temperature ?? "—";
+  const soilEl = document.querySelector("#fig-soil-val");
+  const soilSub = document.querySelector("#fig-soil-sub");
+  const soilBar = document.querySelector("#fig-soil-bar");
+  const soilStatus = document.querySelector("#fig-soil-status");
+  const soilTag = document.querySelector("#fig-soil-tag");
+
+  if (soilEl) soilEl.textContent = `${soilVal}%`;
+  if (soilSub) soilSub.textContent = `Nhiệt độ đất: ${soilTemp}°C`;
+  if (soilBar) soilBar.style.width = `${Math.max(0, Math.min(100, Number(soilVal) || 0))}%`;
+  if (soilStatus && soilTag) {
+    if (soilVal !== "—" && Number(soilVal) < 35) {
+      soilStatus.className = "figure-badge badge-warn";
+      soilStatus.textContent = "⚠️ ĐẤT KHÔ (CẦN TƯỚI)";
+      soilTag.textContent = "Độ ẩm < 35% · Khuyên dùng Kế hoạch tưới";
+    } else if (soilVal !== "—") {
+      soilStatus.className = "figure-badge badge-ok";
+      soilStatus.textContent = "✅ ĐỦ ẨM AN TOÀN";
+      soilTag.textContent = "Độ ẩm >= 35% · Đất đủ độ ẩm";
+    }
+  }
+
+  // 2. WEATHER_01
+  const weather = data["WEATHER_01"]?.metrics || {};
+  const wTemp = weather.temperature ?? "—";
+  const wHum = weather.humidity ?? "—";
+  const wEl = document.querySelector("#fig-weather-val");
+  const wSub = document.querySelector("#fig-weather-sub");
+  const wBar = document.querySelector("#fig-weather-bar");
+  const wStatus = document.querySelector("#fig-weather-status");
+  const wTag = document.querySelector("#fig-weather-tag");
+
+  if (wEl) wEl.textContent = `${wTemp}°C`;
+  if (wSub) wSub.textContent = `Độ ẩm KK: ${wHum}%`;
+  if (wBar) wBar.style.width = `${Math.max(0, Math.min(100, (Number(wTemp) / 50) * 100 || 0))}%`;
+  if (wStatus && wTag) {
+    wStatus.className = "figure-badge badge-ok";
+    wStatus.textContent = "☀️ THỜI TIẾT";
+    wTag.textContent = `Nhiệt độ ${wTemp}°C · Độ ẩm không khí ${wHum}%`;
+  }
+
+  // 3. PUMP_01
+  const pump = data["PUMP_01"]?.metrics || {};
+  const pFlow = pump.flow_rate ?? "—";
+  const pPower = pump.power ?? "—";
+  const pEl = document.querySelector("#fig-pump-val");
+  const pSub = document.querySelector("#fig-pump-sub");
+  const pBar = document.querySelector("#fig-pump-bar");
+  const pStatus = document.querySelector("#fig-pump-status");
+  const pTag = document.querySelector("#fig-pump-tag");
+
+  if (pEl) pEl.textContent = `${pFlow} L/min`;
+  if (pSub) pSub.textContent = `Công suất: ${pPower} W`;
+  if (pBar) pBar.style.width = `${Math.max(0, Math.min(100, (Number(pFlow) / 30) * 100 || 0))}%`;
+  if (pStatus && pTag) {
+    if (Number(pFlow) > 0) {
+      pStatus.className = "figure-badge badge-ok";
+      pStatus.textContent = "💧 BƠM ĐANG CHẠY";
+      pTag.textContent = `Lưu lượng dòng chảy: ${pFlow} L/min`;
+    } else {
+      pStatus.className = "figure-badge badge-info";
+      pStatus.textContent = "⏸️ BƠM SẴN SÀNG";
+      pTag.textContent = "Máy bơm ở trạng thái chờ lệnh";
+    }
+  }
+
+  // 4. PH_01
+  const phData = data["PH_01"]?.metrics || {};
+  const phVal = phData.ph ?? "—";
+  const phEl = document.querySelector("#fig-ph-val");
+  const phPointer = document.querySelector("#fig-ph-pointer");
+  const phStatus = document.querySelector("#fig-ph-status");
+  const phTag = document.querySelector("#fig-ph-tag");
+
+  if (phEl) phEl.textContent = `${phVal} pH`;
+  if (phPointer) phPointer.style.left = `${Math.max(0, Math.min(100, (Number(phVal) / 14) * 100 || 50))}%`;
+  if (phStatus && phTag) {
+    if (phVal !== "—" && Number(phVal) >= 5.5 && Number(phVal) <= 7.5) {
+      phStatus.className = "figure-badge badge-ok";
+      phStatus.textContent = "✅ pH LÝ TƯỞNG";
+      phTag.textContent = `Mức pH đất ${phVal} thuộc khoảng an toàn (5.5 - 7.5)`;
+    } else if (phVal !== "—") {
+      phStatus.className = "figure-badge badge-warn";
+      phStatus.textContent = "⚠️ pH LỆCH CHUẨN";
+      phTag.textContent = `Mức pH đất ${phVal} nằm ngoài dải an toàn`;
+    }
+  }
+
+  // 5. TANK_01
+  const tank = data["TANK_01"]?.metrics || {};
+  const tVal = tank.level ?? tank.tank_level ?? "—";
+  const tEl = document.querySelector("#fig-tank-val");
+  const tBar = document.querySelector("#fig-tank-bar");
+  const tStatus = document.querySelector("#fig-tank-status");
+  const tTag = document.querySelector("#fig-tank-tag");
+
+  if (tEl) tEl.textContent = `${tVal}%`;
+  if (tBar) tBar.style.width = `${Math.max(0, Math.min(100, Number(tVal) || 0))}%`;
+  if (tStatus && tTag) {
+    if (tVal !== "—" && Number(tVal) >= 30) {
+      tStatus.className = "figure-badge badge-ok";
+      tStatus.textContent = "✅ NƯỚC ĐỦ DÙNG";
+      tTag.textContent = `Mực nước bồn chứa đạt ${tVal}% (>= 30%)`;
+    } else if (tVal !== "—") {
+      tStatus.className = "figure-badge badge-warn";
+      tStatus.textContent = "⚠️ BỒN CẠN NƯỚC";
+      tTag.textContent = `Mực nước bồn chứa thấp (${tVal}% < 30%)`;
+    }
+  }
+
+  // 6. SUN_01
+  const sun = data["SUN_01"]?.metrics || {};
+  const sVal = sun.lux ?? "—";
+  const sEl = document.querySelector("#fig-sun-val");
+  const sBar = document.querySelector("#fig-sun-bar");
+  const sStatus = document.querySelector("#fig-sun-status");
+  const sTag = document.querySelector("#fig-sun-tag");
+
+  if (sEl) sEl.textContent = `${sVal} lux`;
+  if (sBar) sBar.style.width = `${Math.max(0, Math.min(100, (Number(sVal) / 100000) * 100 || 0))}%`;
+  if (sStatus && sTag) {
+    sStatus.className = "figure-badge badge-ok";
+    sStatus.textContent = "☀️ BỨC XẠ XÁC THỰC";
+    sTag.textContent = `Bức xạ ánh sáng mặt trời đạt ${sVal} lux`;
+  }
+}
+
 async function loadTelemetry() {
   const data = await api("/api/telemetry/latest");
   latestTelemetry = data;
-  document.querySelector("#devices").innerHTML = knownDevices.map(device => {
-    const item = data[device];
-    const friendlyName = deviceFriendlyNames[device] || device;
-    if (!item) return `<article class="device missing"><div class="device-title"><span class="device-icon">—</span><div><b>${friendlyName}</b><br><small>Chưa nhận dữ liệu cảm biến</small></div></div><div class="meter"><i style="width:8%"></i></div><div class="metrics"><span class="bad">THIẾU DỮ LIỆU</span></div><div class="evidence">Đang chờ dữ liệu</div></article>`;
-    const age = Math.max(0, Math.round(Date.now() / 1000 - item.timestamp));
-    const freshness = age <= SENSOR_TIMEOUT_SECONDS ? "FRESH" : "OFFLINE";
-    const source = item.source_type || "API";
-    const strength = Math.max(8, Math.min(100, Number(item.metrics.soil_moisture ?? item.metrics.level ?? item.metrics.humidity ?? item.metrics.flow_rate ?? 55)));
-    return `<article class="device ${freshness === "FRESH" ? "fresh" : "missing"}"><div class="device-title"><span class="device-icon">●</span><div><b>${friendlyName}</b><br><small>${source}${source === "MQTT" ? " · TRỰC TIẾP" : ""}</small></div></div><div class="meter"><i style="width:${strength}%"></i></div><div class="metrics">${metricLines(item.metrics)}</div><div class="evidence"><span class="${freshness === "FRESH" ? "ok" : "bad"}">${freshness === "FRESH" ? "DỮ LIỆU MỚI" : "MẤT KẾT NỐI"}</span><br>${age} giây trước<br>${formatTime(item.timestamp)}</div></article>`;
-  }).join("");
+  updateSensorFigures(data);
+  const devicesEl = document.querySelector("#devices");
+  if (devicesEl) {
+    devicesEl.innerHTML = knownDevices.map(device => {
+      const item = data[device];
+      const friendlyName = deviceFriendlyNames[device] || device;
+      if (!item) return `<article class="device missing"><div class="device-title"><span class="device-icon">—</span><div><b>${friendlyName}</b><br><small>Chưa nhận dữ liệu cảm biến</small></div></div><div class="meter"><i style="width:8%"></i></div><div class="metrics"><span class="bad">THIẾU DỮ LIỆU</span></div><div class="evidence">Đang chờ dữ liệu</div></article>`;
+      const age = Math.max(0, Math.round(Date.now() / 1000 - item.timestamp));
+      const freshness = age <= SENSOR_TIMEOUT_SECONDS ? "FRESH" : "OFFLINE";
+      const source = item.source_type || "API";
+      const strength = Math.max(8, Math.min(100, Number(item.metrics.soil_moisture ?? item.metrics.level ?? item.metrics.humidity ?? item.metrics.flow_rate ?? 55)));
+      return `<article class="device ${freshness === "FRESH" ? "fresh" : "missing"}"><div class="device-title"><span class="device-icon">●</span><div><b>${friendlyName}</b><br><small>${source}${source === "MQTT" ? " · TRỰC TIẾP" : ""}</small></div></div><div class="meter"><i style="width:${strength}%"></i></div><div class="metrics">${metricLines(item.metrics)}</div><div class="evidence"><span class="${freshness === "FRESH" ? "ok" : "bad"}">${freshness === "FRESH" ? "DỮ LIỆU MỚI" : "MẤT KẾT NỐI"}</span><br>${age} giây trước<br>${formatTime(item.timestamp)}</div></article>`;
+    }).join("");
+  }
 }
 
 async function drawSensorChart() {

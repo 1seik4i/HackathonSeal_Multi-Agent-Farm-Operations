@@ -714,3 +714,151 @@ select:focus {
   color: var(--text);
   line-height: 1.45;
 }
+
+/* 6 Visual Figures 10-Second Sensor Dashboard */
+.sensor-figures-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.figure-card {
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.figure-card:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.figure-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.figure-icon {
+  font-size: 20px;
+}
+
+.figure-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  flex: 1;
+}
+
+.figure-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.badge-ok {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.badge-warn {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.badge-info {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.figure-main-val {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.figure-main-val strong {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+.figure-main-val small {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.figure-meter {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.figure-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.bar-soil { background: linear-gradient(90deg, #f59e0b, #10b981); }
+.bar-weather { background: linear-gradient(90deg, #3b82f6, #ef4444); }
+.bar-pump { background: linear-gradient(90deg, #0ea5e9, #2563eb); }
+.bar-tank { background: linear-gradient(90deg, #38bdf8, #0284c7); }
+.bar-sun { background: linear-gradient(90deg, #facc15, #f97316); }
+
+.ph-meter-wrap {
+  overflow: visible;
+  position: relative;
+}
+
+.ph-gradient-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ef4444 0%, #f59e0b 35%, #10b981 50%, #3b82f6 75%, #8b5cf6 100%);
+}
+
+.ph-pointer {
+  position: absolute;
+  top: -3px;
+  width: 6px;
+  height: 14px;
+  background: #0f172a;
+  border: 1px solid #ffffff;
+  border-radius: 3px;
+  transform: translateX(-50%);
+  transition: left 0.4s ease;
+}
+
+.figure-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .sensor-figures-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .sensor-figures-grid {
+    grid-template-columns: 1fr;
+  }
+}
