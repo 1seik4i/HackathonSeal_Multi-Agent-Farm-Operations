@@ -1,67 +1,128 @@
-# FarmOps AI — Team 2
+# FarmOps AI
 
-Multi-Agent Smart Agriculture cho đề thi: MQTT → Agent coordination → Tool/API → Verification.
+Multi-agent smart agriculture system for monitoring field conditions, coordinating irrigation decisions, and exposing a realtime dashboard for operations.
 
-## Bảo mật MQTT
+## Overview
 
-Ảnh credential chỉ cung cấp topic và username; **không commit key/password**. Tạo `.env` từ `.env.example`, rồi dán đầy đủ broker host, password và test key nếu cổng thông tin cung cấp key riêng. `.env` đã nằm trong `.gitignore`.
+This project combines:
+
+- Node.js + Express backend for REST APIs and WebSocket updates
+- React + Vite frontend dashboard for monitoring and controls
+- MQTT ingestion for IoT telemetry
+- Multi-agent coordination for field analysis, irrigation planning, resource checks, and action verification
+- SQLite for local state and optional MongoDB integration for persistent telemetry
+
+## Features
+
+- Sensor telemetry collection from MQTT or REST API
+- Data validation and freshness checks
+- Device status monitoring per field asset
+- Multi-agent decision flow for irrigation and resource planning
+- Real-time dashboard with action timeline and telemetry view
+- Local demo seeding for testing without hardware
+
+## Architecture
+
+```text
+MQTT / REST telemetry
+        ↓
+IoT ingestion service
+        ↓
+Data validation & storage
+        ↓
+Field IoT Agent → Irrigation Agent → Resource Agent → Coordinator
+        ↓
+Dashboard + WebSocket status updates
+```
+
+## Tech Stack
+
+- Backend: Node.js, Express, MQTT.js, SQLite, MongoDB driver
+- Frontend: React, Vite
+- Runtime: local environment variables and optional Docker Compose
+
+## Repository Structure
+
+```text
+client/      React frontend
+server/      API, MQTT ingestion, agent orchestration, storage
+scripts/     Data simulators and helpers
+Dockerfile   Container image for app runtime
+compose.yaml Docker Compose setup
+README.md    Project overview and setup steps
+.env.example Sample environment variables
+```
+
+## Quick Start
+
+### 1. Install dependencies
+
+```powershell
+npm install
+npm --prefix client install
+```
+
+### 2. Configure environment
+
+Create a local file named `.env` from the sample:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Giữ topic đúng theo portal của BTC. Trong code, MQTT chỉ subscribe telemetry; không publish ngược lên topic thi khi chưa có yêu cầu rõ ràng.
+Then fill in your own local values for MQTT broker settings, API keys, and optional MongoDB connection string.
 
-## Chạy local
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-python -m uvicorn src.app:app --reload
-```
-
-Mở <http://127.0.0.1:8000>. Nếu chưa có credential đầy đủ, API vẫn chạy; hãy gửi telemetry demo qua `POST /api/telemetry`.
-
-## Chạy bằng Docker
-
-Docker image không chứa `.env`, database local hay virtual environment. Tạo file cấu hình cục bộ trước:
+### 3. Run locally
 
 ```powershell
-Copy-Item .env.example .env
-# Điền MQTT_BROKER_HOST, MQTT_PASSWORD và các giá trị do BTC cung cấp.
-docker-compose up --build -d
+npm run dev
 ```
 
-Mở <http://127.0.0.1:8000>. SQLite được lưu trong Docker volume `farmops-data`, nên dữ liệu không mất khi container được tạo lại.
+Open:
+
+- API: http://127.0.0.1:8000
+- Frontend: http://127.0.0.1:5173
+
+### 4. Or run with Docker
 
 ```powershell
-docker-compose ps
-docker-compose logs -f farmops-ai
-docker-compose down
+docker compose up --build -d
 ```
 
-## MQTT payload mong đợi
+## Environment Variables
 
-```json
-{
-  "device_code": "SOIL_01",
-  "timestamp": 1760000000,
-  "metrics": {"soil_moisture": 27, "temperature": 31.2}
-}
+The project reads from `.env` for local secrets and runtime config. Do not commit the real `.env` file to GitHub.
+
+Example variables:
+
+- `MQTT_BROKER_HOST`
+- `MQTT_USERNAME`
+- `MQTT_PASSWORD`
+- `API_PORT`
+- `GEMINI_API_KEY`
+- `GPT_OSS_API_KEY`
+- `MONGODB_URI`
+
+## Security Notes
+
+- Keep `.env` local only and never commit real credentials
+- Use `.env.example` as the public template with placeholder values
+- Ignore generated runtime files such as `.runtime-secrets.json`, `.runtime-settings.json`, and database files
+- Rotate any exposed credentials immediately if they were ever committed
+
+## API Examples
+
+```http
+POST /api/telemetry
+GET /api/telemetry/latest
+POST /api/demo/seed
+GET /api/health
 ```
 
-Thiết bị hợp lệ: `SOIL_01`, `WEATHER_01`, `PUMP_01`, `PH_01`, `TANK_01`, `SUN_01`.
+## Demo and Validation
 
-## API/Tool
+The app supports demo seeding via the dashboard or API to simulate field conditions when real sensor telemetry is unavailable.
 
-- `POST /api/telemetry`: nạp telemetry demo.
-- `GET /api/telemetry/latest`: xem bằng chứng IoT theo thiết bị.
-- `POST /api/coordinate`: Coordinator chạy Field IoT → Irrigation → Resource → Action Agent.
-- `GET /api/actions/{id}`: truy xuất action; Action Agent gọi lại để verification.
+## License
 
-## Kiểm thử
-
-```powershell
-python -m unittest discover -s tests -v
-```
+This project is intended for internal or educational use unless otherwise specified by the repository owner.

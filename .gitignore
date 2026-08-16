@@ -1,5 +1,13 @@
 .env
+.env.*
+!.env.example
+.env.local
+.env.development
+.env.production
+
+# Local runtime state and generated data
 farmops.db
+*.db
 tests/_test_farmops.db
 __pycache__/
 *.py[cod]
@@ -9,3 +17,14 @@ doc/
 .pytest_cache/
 temp.txt
 track_b.txt
+node_modules/
+client/node_modules/
+client/dist/
+mongodb_backup.json
+.runtime-settings.json
+.runtime-secrets.json
+.farm-map.json
+*.pem
+*.key
+*.crt
+.DS_Store
