@@ -5,3 +5,6 @@ __pycache__/
 *.py[cod]
 .venv/
 doc/
+.pytest_cache/
+temp.txt
+track_b.txt

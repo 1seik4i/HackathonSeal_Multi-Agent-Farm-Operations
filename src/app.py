@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from src.agents import FarmCoordinatorAgent
 from src.models import ManagerRequest, TelemetryMessage
+from src.mongo_storage import MongoTelemetryStore
 from src.mqtt_client import MQTTIngestionClient
 from src.settings import settings
 from src.storage import FarmStore
@@ -18,7 +19,8 @@ from src.storage import FarmStore
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 store = FarmStore(settings.database_path)
 coordinator = FarmCoordinatorAgent(store)
-mqtt_ingestion = MQTTIngestionClient(store)
+mongo_store = MongoTelemetryStore(settings.mongodb_uri, settings.mongodb_db_name) if settings.mongodb_uri else None
+mqtt_ingestion = MQTTIngestionClient(store, mongo_store=mongo_store)
 app = FastAPI(title="FarmOps AI — Team 2", version="1.0.0")
 
 
