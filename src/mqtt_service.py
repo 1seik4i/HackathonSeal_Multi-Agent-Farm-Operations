@@ -23,8 +23,9 @@ log = logging.getLogger(__name__)
 class MQTTIngestionClient:
     """Secure MQTT subscriber that normalizes and persists contest telemetry."""
 
-    def __init__(self, store: FarmStore) -> None:
+    def __init__(self, store: FarmStore, mongo_store: Any = None) -> None:
         self.store = store
+        self.mongo_store = mongo_store
         self.processor = IoTDataProcessor(settings.stale_after_seconds)
         self.connected = False
         self.subscribed = False
@@ -199,6 +200,11 @@ class MQTTIngestionClient:
                         raw_payload=raw_payload,
                         quality=processed["quality"],
                     )
+                    if self.mongo_store is not None:
+                        try:
+                            self.mongo_store.ingest(processed)
+                        except Exception as mongo_err:
+                            log.warning("MongoDB ingestion failed: %s", mongo_err)
                     accepted += 1
                 except Exception as error:
                     rejected += 1

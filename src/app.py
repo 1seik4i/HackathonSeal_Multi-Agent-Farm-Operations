@@ -70,6 +70,11 @@ def demo_ingest(message: TelemetryMessage) -> dict:
     """Demo endpoint; contest messages normally enter through MQTT."""
     processed = mqtt_ingestion.processor.process(message.model_dump())
     store.ingest(message, source_type="API", quality=processed["quality"])
+    if getattr(mqtt_ingestion, "mongo_store", None) is not None:
+        try:
+            mqtt_ingestion.mongo_store.ingest(processed)
+        except Exception as err:
+            logging.warning("API ingestion mongo processing failed: %s", err)
     return {"accepted": True, "device_code": message.device_code, "quality": processed["quality"]}
 
 
