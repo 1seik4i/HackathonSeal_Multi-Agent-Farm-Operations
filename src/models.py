@@ -42,6 +42,7 @@ class AgentConfigView(BaseModel):
     model: str
     enabled: bool
     has_api_key: bool
+    has_custom_key: bool = False
     connection_status: Literal["NOT_CONFIGURED", "TESTING", "READY", "FAILED"]
     last_tested_at: float | None = None
     last_error: str | None = None

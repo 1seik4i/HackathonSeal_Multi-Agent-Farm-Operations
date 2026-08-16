@@ -120,8 +120,9 @@ class FarmStore:
         )
 
     def list_actions(self, limit: int = 50) -> list[ActionRecord]:
+        limit_val = limit.default if hasattr(limit, "default") and isinstance(limit.default, int) else int(limit)
         with self._connect() as conn:
-            rows = conn.execute("SELECT * FROM actions ORDER BY created_at DESC LIMIT ?", (limit,)).fetchall()
+            rows = conn.execute("SELECT * FROM actions ORDER BY created_at DESC LIMIT ?", (limit_val,)).fetchall()
         return [ActionRecord(id=row["id"], action_type=row["action_type"], status=row["status"], payload=json.loads(row["payload_json"]), created_at=row["created_at"], updated_at=row["updated_at"]) for row in rows]
 
     def update_action(self, action_id: str, status: str, payload_updates: dict[str, Any] | None = None) -> ActionRecord | None:
@@ -142,8 +143,9 @@ class FarmStore:
         return {"timestamp": row["timestamp"], "received_at": row["received_at"], "metrics": json.loads(row["metrics_json"]), "source_type": row["source_type"], "quality": json.loads(row["quality_json"]) if row["quality_json"] else None}
 
     def telemetry_history(self, device_code: str, limit: int = 50) -> list[dict[str, Any]]:
+        limit_val = limit.default if hasattr(limit, "default") and isinstance(limit.default, int) else int(limit)
         with self._connect() as conn:
-            rows = conn.execute("SELECT device_code,timestamp,metrics_json,received_at,source_type,topic,quality_json FROM telemetry WHERE device_code=? ORDER BY id DESC LIMIT ?", (device_code, limit)).fetchall()
+            rows = conn.execute("SELECT device_code,timestamp,metrics_json,received_at,source_type,topic,quality_json FROM telemetry WHERE device_code=? ORDER BY id DESC LIMIT ?", (device_code, limit_val)).fetchall()
         return [{"device_code": row["device_code"], "timestamp": row["timestamp"], "metrics": json.loads(row["metrics_json"]), "received_at": row["received_at"], "source_type": row["source_type"], "topic": row["topic"], "quality": json.loads(row["quality_json"]) if row["quality_json"] else None} for row in rows]
 
     def telemetry_history_window(self, device_code: str, since: float, points: int = 30) -> list[dict[str, Any]]:

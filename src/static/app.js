@@ -14,38 +14,38 @@ let latestActions = [];
 let latestHealth = {};
 
 async function api(path, options = {}) {
-  const response = await fetch(path, {headers: {"content-type": "application/json", ...(options.headers || {})}, ...options});
+  const response = await fetch(path, { headers: { "content-type": "application/json", ...(options.headers || {}) }, ...options });
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw body.detail || body || {code: "REQUEST_FAILED"};
+  if (!response.ok) throw body.detail || body || { code: "REQUEST_FAILED" };
   return body;
 }
 
 function escapeHtml(value) {
-  return String(value).replace(/[&<>'"]/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[char]));
+  return String(value).replace(/[&<>'"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
 }
 
 function formatTime(epoch) {
-  return epoch ? new Date(epoch * 1000).toLocaleString("vi-VN", {dateStyle: "medium", timeStyle: "medium"}) : "-";
+  return epoch ? new Date(epoch * 1000).toLocaleString("vi-VN", { dateStyle: "medium", timeStyle: "medium" }) : "-";
 }
 
 function metricLines(metrics) {
-  const labels = {soil_moisture:"Độ ẩm đất", soil_temperature:"Nhiệt độ đất", temperature:"Nhiệt độ không khí", humidity:"Độ ẩm không khí", flow_rate:"Lưu lượng dòng chảy", power:"Công suất hoạt động", ph:"Độ pH", level:"Mực nước", tank_level:"Mực nước bồn", lux:"Cường độ ánh sáng", pump_status:"Trạng thái bơm"};
-  const units = {soil_moisture:"%", soil_temperature:"°C", temperature:"°C", humidity:"%", flow_rate:" L/min", power:" W", level:"%", tank_level:"%", lux:" lux"};
-  return Object.entries(metrics).map(([key,value]) => `<div class="metric"><small>${labels[key] || escapeHtml(key.replaceAll("_", " "))}</small><b>${key === "pump_status" ? (Number(value) > 0 ? "Sẵn sàng" : "Có lỗi/Tắt") : `${escapeHtml(value)}${units[key] || ""}`}</b></div>`).join("");
+  const labels = { soil_moisture: "Độ ẩm đất", soil_temperature: "Nhiệt độ đất", temperature: "Nhiệt độ không khí", humidity: "Độ ẩm không khí", flow_rate: "Lưu lượng dòng chảy", power: "Công suất hoạt động", ph: "Độ pH", level: "Mực nước", tank_level: "Mực nước bồn", lux: "Cường độ ánh sáng", pump_status: "Trạng thái bơm" };
+  const units = { soil_moisture: "%", soil_temperature: "°C", temperature: "°C", humidity: "%", flow_rate: " L/min", power: " W", level: "%", tank_level: "%", lux: " lux" };
+  return Object.entries(metrics).map(([key, value]) => `<div class="metric"><small>${labels[key] || escapeHtml(key.replaceAll("_", " "))}</small><b>${key === "pump_status" ? (Number(value) > 0 ? "Sẵn sàng" : "Có lỗi/Tắt") : `${escapeHtml(value)}${units[key] || ""}`}</b></div>`).join("");
 }
 
 function statusVi(status) {
-  const labels = {READY:"SẴN SÀNG", NOT_CONFIGURED:"CHƯA CẤU HÌNH", FAILED:"THẤT BẠI", PENDING:"ĐANG CHỜ", PENDING_APPROVAL:"CHỜ PHÊ DUYỆT", APPROVED:"ĐÃ PHÊ DUYỆT", REJECTED:"ĐÃ TỪ CHỐI", CREATED:"ĐÃ TẠO", EXECUTING:"ĐANG THỰC HIỆN", VERIFIED:"ĐÃ XÁC MINH", ACTIVE:"ĐANG HOẠT ĐỘNG", DEGRADED:"SUY GIẢM"};
+  const labels = { READY: "SẴN SÀNG", NOT_CONFIGURED: "CHƯA CẤU HÌNH", FAILED: "THẤT BẠI", PENDING: "ĐANG CHỜ", PENDING_APPROVAL: "CHỜ PHÊ DUYỆT", APPROVED: "ĐÃ PHÊ DUYỆT", REJECTED: "ĐÃ TỪ CHỐI", CREATED: "ĐÃ TẠO", EXECUTING: "ĐANG THỰC HIỆN", VERIFIED: "ĐÃ XÁC MINH", ACTIVE: "ĐANG HOẠT ĐỘNG", DEGRADED: "SUY GIẢM" };
   return labels[status] || String(status || "-").replaceAll("_", " ");
 }
 
 function actionTypeVi(type) {
-  const labels = {IRRIGATION_PLAN:"Kế hoạch tưới", FIELD_TASK:"Nhiệm vụ hiện trường", ALERT:"Cảnh báo", NOTIFICATION:"Thông báo"};
+  const labels = { IRRIGATION_PLAN: "Kế hoạch tưới", FIELD_TASK: "Nhiệm vụ hiện trường", ALERT: "Cảnh báo", NOTIFICATION: "Thông báo" };
   return labels[type] || String(type || "Không tạo hành động").replaceAll("_", " ");
 }
 
 function agentNameVi(name) {
-  const labels = {"Field IoT Agent":"Tác tử IoT hiện trường", "Irrigation Planning Agent":"Tác tử lập kế hoạch tưới", "Resource Agent":"Tác tử tài nguyên", "Farm Action Agent":"Tác tử hành động nông trại", "Farm Coordinator Agent":"Tác tử điều phối nông trại", "Rule Agent":"Tác tử luật"};
+  const labels = { "Field IoT Agent": "Tác tử IoT hiện trường", "Irrigation Planning Agent": "Tác tử lập kế hoạch tưới", "Resource Agent": "Tác tử tài nguyên", "Farm Action Agent": "Tác tử hành động nông trại", "Farm Coordinator Agent": "Tác tử điều phối nông trại", "Rule Agent": "Tác tử luật" };
   return labels[name] || name;
 }
 
@@ -68,7 +68,7 @@ function renderExecutiveSummary() {
   const coverageTarget = document.querySelector("#kpi-coverage");
   if (!coverageTarget) return;
   const now = Date.now() / 1000;
-  const records = knownDevices.map(id => ({id, item: latestTelemetry[id]}));
+  const records = knownDevices.map(id => ({ id, item: latestTelemetry[id] }));
   const reporting = records.filter(record => record.item).length;
   const fresh = records.filter(record => record.item && now - record.item.timestamp <= SENSOR_TIMEOUT_SECONDS).length;
   const attention = records.filter(record => {
@@ -123,12 +123,12 @@ async function loadTelemetry() {
 
 async function drawSensorChart() {
   const specs = [
-    {device:"SOIL_01", metric:"soil_moisture", name:"Độ ẩm đất", unit:"%", axis:"Độ ẩm (%)", color:"#10b981", domain:[0,100], decimals:1},
-    {device:"WEATHER_01", metric:"temperature", name:"Nhiệt độ không khí", unit:"°C", axis:"Nhiệt độ (°C)", color:"#3b82f6", decimals:1},
-    {device:"PUMP_01", metric:"flow_rate", name:"Lưu lượng bơm", unit:" L/min", axis:"Lưu lượng (L/min)", color:"#f59e0b", zeroBased:true, decimals:1},
-    {device:"PH_01", metric:"ph", name:"Độ pH của đất", unit:"", axis:"Độ pH", color:"#a855f7", domain:[0,14], decimals:1},
-    {device:"TANK_01", metric:"level", name:"Mực nước bồn", unit:"%", axis:"Mực nước (%)", color:"#ef4444", domain:[0,100], decimals:1},
-    {device:"SUN_01", metric:"lux", name:"Cường độ ánh sáng", unit:" lux", axis:"Cường độ sáng (lux)", color:"#eab308", zeroBased:true, decimals:0},
+    { device: "SOIL_01", metric: "soil_moisture", name: "Độ ẩm đất", unit: "%", axis: "Độ ẩm (%)", color: "#10b981", domain: [0, 100], decimals: 1 },
+    { device: "WEATHER_01", metric: "temperature", name: "Nhiệt độ không khí", unit: "°C", axis: "Nhiệt độ (°C)", color: "#3b82f6", decimals: 1 },
+    { device: "PUMP_01", metric: "flow_rate", name: "Lưu lượng bơm", unit: " L/min", axis: "Lưu lượng (L/min)", color: "#f59e0b", zeroBased: true, decimals: 1 },
+    { device: "PH_01", metric: "ph", name: "Độ pH của đất", unit: "", axis: "Độ pH", color: "#a855f7", domain: [0, 14], decimals: 1 },
+    { device: "TANK_01", metric: "level", name: "Mực nước bồn", unit: "%", axis: "Mực nước (%)", color: "#ef4444", domain: [0, 100], decimals: 1 },
+    { device: "SUN_01", metric: "lux", name: "Cường độ ánh sáng", unit: " lux", axis: "Cường độ sáng (lux)", color: "#eab308", zeroBased: true, decimals: 0 },
   ];
   const histories = await Promise.all(specs.map(spec => api(`/api/telemetry/history?device_id=${spec.device}&minutes=30&points=30`).catch(() => [])));
   const now = Date.now() / 1000;
@@ -140,9 +140,9 @@ async function drawSensorChart() {
 
 function renderMiniChart(spec, history, windowStart, now) {
   const samples = history
-    .map(row => ({timestamp:Number(row.timestamp), value:Number(row.metrics?.[spec.metric])}))
+    .map(row => ({ timestamp: Number(row.timestamp), value: Number(row.metrics?.[spec.metric]) }))
     .filter(sample => Number.isFinite(sample.timestamp) && Number.isFinite(sample.value) && sample.timestamp >= windowStart)
-    .sort((a,b) => a.timestamp - b.timestamp);
+    .sort((a, b) => a.timestamp - b.timestamp);
   const liveValue = Number(latestTelemetry[spec.device]?.metrics?.[spec.metric]);
   const currentValue = Number.isFinite(liveValue) ? liveValue : samples.at(-1)?.value;
   const currentLabel = Number.isFinite(currentValue) ? `${formatChartValue(currentValue, spec)}${spec.unit}` : "—";
@@ -156,7 +156,7 @@ function renderMiniChart(spec, history, windowStart, now) {
   const y = value => bottom - ((value - domainMin) / (domainMax - domainMin)) * (bottom - top);
   const points = samples.map(sample => `${x(sample.timestamp).toFixed(1)},${y(sample.value).toFixed(1)}`).join(" ");
   const yTicks = [domainMax, (domainMin + domainMax) / 2, domainMin];
-  const grid = yTicks.map((tick, tickIndex) => { const py = top + tickIndex * ((bottom - top) / 2); return `<line class="mini-chart-grid" x1="${left}" y1="${py}" x2="${right}" y2="${py}"/><text class="mini-chart-axis" x="${left-7}" y="${py+3}" text-anchor="end">${formatAxisValue(tick, spec)}</text>`; }).join("");
+  const grid = yTicks.map((tick, tickIndex) => { const py = top + tickIndex * ((bottom - top) / 2); return `<line class="mini-chart-grid" x1="${left}" y1="${py}" x2="${right}" y2="${py}"/><text class="mini-chart-axis" x="${left - 7}" y="${py + 3}" text-anchor="end">${formatAxisValue(tick, spec)}</text>`; }).join("");
   const timeTicks = [windowStart, windowStart + 15 * 60, now];
   const timeLabels = timeTicks.map((timestamp, tickIndex) => `<text class="mini-chart-axis" x="${x(timestamp)}" y="169" text-anchor="${tickIndex === 0 ? "start" : tickIndex === 2 ? "end" : "middle"}">${tickIndex === 2 ? "Hiện tại" : formatChartTime(timestamp)}</text>`).join("");
   const circles = samples.map(sample => `<circle class="chart-point" tabindex="0" cx="${x(sample.timestamp).toFixed(1)}" cy="${y(sample.value).toFixed(1)}" r="2.6" fill="${spec.color}" data-chart-point data-time="${sample.timestamp}" data-value="${sample.value}" data-name="${spec.name}" data-unit="${escapeHtml(spec.unit)}" data-decimals="${spec.decimals}" aria-label="${spec.name}, ${formatChartValue(sample.value, spec)}${spec.unit}, ${formatChartTime(sample.timestamp)}"/>`).join("");
@@ -172,16 +172,16 @@ function chartDomain(spec, values) {
 }
 
 function formatChartValue(value, spec) {
-  return Number(value).toLocaleString("vi-VN", {minimumFractionDigits:spec.decimals, maximumFractionDigits:spec.decimals});
+  return Number(value).toLocaleString("vi-VN", { minimumFractionDigits: spec.decimals, maximumFractionDigits: spec.decimals });
 }
 
 function formatAxisValue(value, spec) {
   const decimals = spec.metric === "ph" ? 1 : Math.abs(value) >= 1000 ? 0 : Math.abs(value) < 10 ? 1 : 0;
-  return Number(value).toLocaleString("vi-VN", {maximumFractionDigits:decimals});
+  return Number(value).toLocaleString("vi-VN", { maximumFractionDigits: decimals });
 }
 
 function formatChartTime(epoch) {
-  return new Date(epoch * 1000).toLocaleTimeString("vi-VN", {hour:"2-digit", minute:"2-digit"});
+  return new Date(epoch * 1000).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
 }
 
 function bindChartTooltips() {
@@ -195,8 +195,8 @@ function bindChartTooltips() {
       const pointerY = event.clientY || pointRect.top + pointRect.height / 2;
       tooltip.style.left = `${Math.max(76, Math.min(rect.width - 76, pointerX - rect.left))}px`;
       tooltip.style.top = `${Math.max(68, pointerY - rect.top)}px`;
-      const value = Number(point.dataset.value).toLocaleString("vi-VN", {minimumFractionDigits:Number(point.dataset.decimals), maximumFractionDigits:Number(point.dataset.decimals)});
-      tooltip.innerHTML = `<span class="chart-tooltip-time">${new Date(Number(point.dataset.time) * 1000).toLocaleTimeString("vi-VN", {hour:"numeric", minute:"2-digit"})}</span><b>${point.dataset.name}: ${value}${point.dataset.unit}</b>`;
+      const value = Number(point.dataset.value).toLocaleString("vi-VN", { minimumFractionDigits: Number(point.dataset.decimals), maximumFractionDigits: Number(point.dataset.decimals) });
+      tooltip.innerHTML = `<span class="chart-tooltip-time">${new Date(Number(point.dataset.time) * 1000).toLocaleTimeString("vi-VN", { hour: "numeric", minute: "2-digit" })}</span><b>${point.dataset.name}: ${value}${point.dataset.unit}</b>`;
       tooltip.classList.add("visible");
     };
     point.addEventListener("pointerenter", show);
@@ -209,17 +209,17 @@ function bindChartTooltips() {
 
 function sensorState(deviceId) {
   const item = latestTelemetry[deviceId];
-  if (!item) return {freshness:"offline", violated:false};
-  const age = Math.max(0, Date.now()/1000 - item.timestamp);
+  if (!item) return { freshness: "offline", violated: false };
+  const age = Math.max(0, Date.now() / 1000 - item.timestamp);
   const freshness = age > SENSOR_TIMEOUT_SECONDS ? "offline" : "fresh";
   const m = item.metrics || {};
   const violated = freshness === "fresh" && (deviceId === "SOIL_01" ? Number(m.soil_moisture) < 30 : deviceId === "TANK_01" ? Number(m.tank_level ?? m.level) < 20 : deviceId === "PUMP_01" ? String(m.pump_status).toUpperCase() === "ERROR" || Number(m.pump_status) === 0 : deviceId === "PH_01" ? Number(m.ph) < 5.5 || Number(m.ph) > 7.5 : false);
-  return {freshness, violated};
+  return { freshness, violated };
 }
 
 function worstZoneStatus(ids) {
   const states = ids.map(sensorState);
-  if (states.some(s=>s.freshness === "offline")) return "offline";
+  if (states.some(s => s.freshness === "offline")) return "offline";
   return "normal";
 }
 
@@ -254,8 +254,8 @@ function renderFarmMap(selectedId = null) {
   }
   if (!Object.keys(latestTelemetry).length) popup += `<text x="430" y="205" text-anchor="middle" fill="#64748b" font-size="18">Không có dữ liệu cảm biến</text>`;
   svg.innerHTML = zoneSvg + pinSvg + popup;
-  svg.querySelectorAll("[data-sensor]").forEach(pin=>pin.addEventListener("click",event=>{event.stopPropagation();renderFarmMap(pin.dataset.sensor)}));
-  svg.querySelector("[data-history]")?.addEventListener("click",event=>{event.stopPropagation();showMapHistory(event.target.dataset.history)});
+  svg.querySelectorAll("[data-sensor]").forEach(pin => pin.addEventListener("click", event => { event.stopPropagation(); renderFarmMap(pin.dataset.sensor) }));
+  svg.querySelector("[data-history]")?.addEventListener("click", event => { event.stopPropagation(); showMapHistory(event.target.dataset.history) });
   svg.onclick = event => { if (!event.target.closest(".sensor-node") && !event.target.closest(".sensor-popup")) renderFarmMap(); };
 }
 
@@ -280,12 +280,12 @@ async function loadSnapshot() {
 function renderAgentSelector() {
   document.querySelector("#agent-selector").innerHTML = agentConfigs.map(agent => `
     <label class="agent">
-      <span style="display: flex; align-items: center; gap: 8px; font-weight: bold; color: var(--text);">
+      <span class="agent-title">
         <input type="checkbox" value="${agent.agent_id}" ${agent.enabled && agent.connection_status === "READY" ? "checked" : ""}>
-        ${escapeHtml(agent.display_name)}
+        <span class="agent-name">${escapeHtml(agent.display_name)}</span>
       </span>
-      <span style="margin-left: 22px; font-size: 12px; color: var(--muted);">${escapeHtml(agent.role)}</span>
-      <span style="margin-left: 22px; font-size: 11px; margin-top: 2px; color: var(--muted);">
+      <span class="agent-role">${escapeHtml(agent.role)}</span>
+      <span class="agent-meta">
         <span class="${agent.connection_status === "READY" ? "ok" : "warn"}">${agent.connection_status === 'READY' ? 'SẴN SÀNG' : statusVi(agent.connection_status)}</span> · ${escapeHtml(agent.provider)}/${escapeHtml(agent.model)}
       </span>
     </label>
@@ -300,7 +300,7 @@ function renderAgentSelector() {
 }
 
 function renderAgentConfigs() {
-  document.querySelector("#agent-configs").innerHTML = agentConfigs.map(agent => `<article class="agent" data-agent="${agent.agent_id}"><div class="section-head"><div><b>${escapeHtml(agent.display_name)}</b><p class="muted">${escapeHtml(agent.role)}</p></div><span class="tag ${agent.connection_status === "READY" ? "ok" : "warn"}">${agent.connection_status}</span></div><div class="two"><label>Provider<select class="provider"><option value="openai" ${agent.provider === "openai" ? "selected" : ""}>ChatGPT / OpenAI</option><option value="gemini" ${agent.provider === "gemini" ? "selected" : ""}>Google Gemini</option><option value="anthropic" ${agent.provider === "anthropic" ? "selected" : ""}>Claude / Anthropic</option><option value="deepseek" ${agent.provider === "deepseek" ? "selected" : ""}>DeepSeek</option></select></label><label>Model<input class="model" value="${escapeHtml(agent.model)}" maxlength="120"></label></div><label>API key<input class="api-key" type="password" autocomplete="new-password" placeholder="Enter a new or replacement API key"></label><label><input class="enabled" type="checkbox" ${agent.enabled ? "checked" : ""}> Enable this provider</label><div class="row"><button class="save-agent secondary">Save settings</button><button class="test-agent">Test connection</button></div><span class="agent-message evidence">${agent.has_api_key ? "Key stored securely in the backend" : "No API key configured"}${agent.last_error ? ` · ${escapeHtml(agent.last_error)}` : ""}</span></article>`).join("");
+  document.querySelector("#agent-configs").innerHTML = agentConfigs.map(agent => `<article class="agent" data-agent="${agent.agent_id}"><div class="section-head"><div class="agent-header-info"><b class="agent-name">${escapeHtml(agent.display_name)}</b><p class="muted">${escapeHtml(agent.role)}</p></div><span class="tag ${agent.connection_status === "READY" ? "ok" : "warn"}">${agent.connection_status}</span></div><div class="two"><label>Provider<select class="provider"><option value="openai" ${agent.provider === "openai" ? "selected" : ""}>ChatGPT / OpenAI</option><option value="gemini" ${agent.provider === "gemini" ? "selected" : ""}>Google Gemini</option><option value="anthropic" ${agent.provider === "anthropic" ? "selected" : ""}>Claude / Anthropic</option><option value="deepseek" ${agent.provider === "deepseek" ? "selected" : ""}>DeepSeek</option></select></label><label>Model<input class="model" value="${escapeHtml(agent.model)}" maxlength="120"></label></div><label>API key<input class="api-key" type="password" autocomplete="new-password" placeholder="Enter a new or replacement API key"></label><label><input class="enabled" type="checkbox" ${agent.enabled ? "checked" : ""}> Enable this provider</label><div class="row"><button class="save-agent secondary">Save settings</button><button class="test-agent">Test connection</button></div><span class="agent-message evidence">${agent.has_api_key ? (agent.has_custom_key ? "Đã nhập API key tùy chỉnh (ưu tiên dùng)" : "Tự động dùng API key mặc định trong .env") : "Chưa có API key"}${agent.last_error ? ` · ${escapeHtml(agent.last_error)}` : ""}</span></article>`).join("");
   document.querySelectorAll(".save-agent").forEach(button => button.addEventListener("click", saveAgent));
   document.querySelectorAll(".test-agent").forEach(button => button.addEventListener("click", testAgent));
 }
@@ -317,8 +317,8 @@ async function saveAgent(event) {
   const message = card.querySelector(".agent-message");
   event.target.disabled = true;
   try {
-    await api(`/api/agents/${card.dataset.agent}/config`, {method: "PUT", body: JSON.stringify({provider: card.querySelector(".provider").value, model: card.querySelector(".model").value.trim(), api_key: key, enabled: card.querySelector(".enabled").checked})});
-    message.textContent = "Saved securely in the backend. Test the connection to mark this provider ready.";
+    await api(`/api/agents/${card.dataset.agent}/config`, { method: "PUT", body: JSON.stringify({ provider: card.querySelector(".provider").value, model: card.querySelector(".model").value.trim(), api_key: key, enabled: card.querySelector(".enabled").checked }) });
+    message.textContent = key ? "Đã lưu API key tùy chỉnh." : "Đã lưu (đang tự động dùng API key mặc định trong .env).";
     card.querySelector(".api-key").value = "";
     await loadAgents();
   } catch (error) { message.textContent = `Unable to save: ${JSON.stringify(error)}`; }
@@ -329,18 +329,81 @@ async function testAgent(event) {
   const card = event.target.closest("[data-agent]");
   const message = card.querySelector(".agent-message");
   event.target.disabled = true; message.textContent = "Connecting to the live provider...";
-  try { await api(`/api/agents/${card.dataset.agent}/test-connection`, {method: "POST"}); message.textContent = "READY — live provider connection succeeded."; }
+  try { await api(`/api/agents/${card.dataset.agent}/test-connection`, { method: "POST" }); message.textContent = "READY — live provider connection succeeded."; }
   catch (error) { message.textContent = `FAILED: ${JSON.stringify(error)}`; }
   finally { event.target.disabled = false; await loadAgents(); }
 }
 
 function renderRun(result) {
   const target = document.querySelector("#run-result");
-  target.className = "";
-  const traces = (result.real_agent_trace || []).map(trace => `<div class="trace"><b>${escapeHtml(trace.agent_id)}</b> <span class="tag">${escapeHtml(trace.provider)}/${escapeHtml(trace.model)}</span><p>${escapeHtml(trace.analysis)}</p></div>`).join("");
+  if (!target) return;
+  target.className = "run-result-card";
+  
   const decision = result.decision || {};
-  const rules = (result.rule_trace || []).map(step => `<div class="trace"><b>${escapeHtml(step.agent || "Rule Agent")}</b><p>${escapeHtml(step.reason || step.decision || step.verification?.reason || "Evidence processed.")}</p></div>`).join("");
-  target.innerHTML = `<div class="row"><span class="tag">${escapeHtml(result.status)}</span><b>${escapeHtml(decision.action_type || "No action created")}</b><span class="warn">${escapeHtml(result.verification_status || "PENDING")}</span></div><p><b>Scenario:</b> ${escapeHtml(result.scenario_text || "-")}</p><p class="evidence"><b>Evidence source:</b> ${escapeHtml(result.telemetry_source?.source_type || "-")} · ${escapeHtml(result.telemetry_source?.topic || "-")}</p>${traces}${rules}`;
+  const isIrrigation = decision.action_type === "IRRIGATION_PLAN";
+  const actionTypeLabel = isIrrigation ? "Kế hoạch tưới" : (decision.action_type ? decision.action_type.replaceAll("_", " ") : "Nhiệm vụ hiện trường");
+  const statusLabel = statusVi(result.verification_status || decision.status || "PENDING");
+  const telemetry = result.telemetry_snapshot || {};
+  
+  const evidencePills = Object.entries(telemetry).map(([dev, data]) => {
+    const m = data.metrics || {};
+    let val = dev;
+    if (dev === "SOIL_01") val = `Đất ${m.soil_moisture ?? "—"}%`;
+    else if (dev === "WEATHER_01") val = `Thời tiết ${m.temperature ?? "—"}°C`;
+    else if (dev === "PUMP_01") val = `Bơm ${m.flow_rate ?? "—"} L/min`;
+    else if (dev === "PH_01") val = `pH ${m.ph ?? "—"}`;
+    else if (dev === "TANK_01") val = `Bồn ${m.level ?? m.tank_level ?? "—"}%`;
+    else if (dev === "SUN_01") val = `Sáng ${m.lux ?? "—"} lux`;
+    return `<span class="evidence-pill">${escapeHtml(val)}</span>`;
+  }).join("");
+
+  const agentTraces = (result.real_agent_trace || []).map(trace => {
+    const name = agentNameVi(trace.agent_id);
+    return `
+      <div class="agent-trace-card">
+        <div class="agent-trace-head">
+          <b>${escapeHtml(name)}</b>
+          <span class="tag">${escapeHtml(trace.provider)}/${escapeHtml(trace.model)}</span>
+        </div>
+        <p class="agent-trace-text">${escapeHtml(trace.analysis)}</p>
+      </div>
+    `;
+  }).join("");
+
+  const summaryText = result.ai_summary || result.ai_executive_summary || result.summary || "Đã phân tích xong dữ liệu cảm biến.";
+
+  target.innerHTML = `
+    <div class="run-header">
+      <div class="run-title-group">
+        <span class="tag ok">${escapeHtml(result.status || "COMPLETED")}</span>
+        <strong class="action-name">${escapeHtml(actionTypeLabel)}</strong>
+      </div>
+      <span class="tag warn">${escapeHtml(statusLabel)}</span>
+    </div>
+    
+    <div class="user-request-box">
+      <small>Yêu cầu từ người dùng:</small>
+      <p>"${escapeHtml(result.scenario_text || "-")}"</p>
+    </div>
+
+    <div class="ai-summary-box">
+      <div class="ai-summary-head">
+        <span class="ai-icon">✨</span>
+        <b>Phân tích & Trả lời từ AI:</b>
+      </div>
+      <p>${escapeHtml(summaryText)}</p>
+    </div>
+
+    <div class="evidence-strip">
+      <small>Dữ liệu cảm biến thực tế (${escapeHtml(result.telemetry_source?.source_type || "MQTT")}):</small>
+      <div class="evidence-pills">${evidencePills}</div>
+    </div>
+
+    <div class="agent-traces-section">
+      <small>Chi tiết phân tích từ các Tác tử AI:</small>
+      ${agentTraces}
+    </div>
+  `;
 }
 
 async function runCoordination() {
@@ -348,7 +411,7 @@ async function runCoordination() {
   if (selected.length < 3) { setRunStatus("Select at least three READY agents.", "bad"); return; }
   const button = document.querySelector("#run"); button.disabled = true; setRunStatus("Creating an MQTT snapshot and calling live providers...", "warn");
   try {
-    const result = await api("/api/coordination-runs", {method: "POST", body: JSON.stringify({scenario_text: document.querySelector("#scenario").value.trim(), selected_agents: selected, target_zone: "FARM_ZONE_1"})});
+    const result = await api("/api/coordination-runs", { method: "POST", body: JSON.stringify({ scenario_text: document.querySelector("#scenario").value.trim(), selected_agents: selected, target_zone: "FARM_ZONE_1" }) });
     renderRun(result); setRunStatus("Complete. The action is waiting for operator approval.", "ok"); await loadActions();
   } catch (error) { setRunStatus(`Unable to run: ${JSON.stringify(error)}`, "bad"); }
   finally { button.disabled = false; }
@@ -370,7 +433,7 @@ async function loadActions() {
     `<article class="action action-system"><div class="section-head"><div class="action-title"><span class="action-icon">TK</span><b>Nhiệm vụ Kiểm tra Thiết bị</b></div><span class="tag ${offline.length ? "bad" : "ok"}">${offline.length ? "CẦN HÀNH ĐỘNG" : "KHÔNG YÊU CẦU"}</span></div><p>${offline.length ? `Cần kiểm tra ${offline.map(displayDevice).join(", ")} vì không nhận được tín hiệu trong 60 giây qua.` : "Không yêu cầu kiểm tra thủ công. Mọi cảm biến đều hoạt động tốt trong 60 giây qua."}</p><p class="evidence">Bằng chứng: ${reporting.length}/6 cảm biến phản hồi</p></article>`,
     `<article class="action action-system"><div class="section-head"><div class="action-title"><span class="action-icon">AP</span><b>Hàng đợi Phê duyệt</b></div><span class="tag ${pending.length ? "warn" : "ok"}">${pending.length ? `${pending.length} ĐANG CHỜ` : "TRỐNG"}</span></div><p>${pending.length ? "Có quyết định vận hành từ AI đang chờ quản lý phê duyệt." : "Không có công việc nào chờ duyệt. Quyết định của AI sẽ xuất hiện tại đây kèm theo bằng chứng."}</p><p class="evidence">Chốt chặn phê duyệt của con người · AI không thể tự động phê duyệt</p></article>`,
   ];
-  const actionCards = actions.map(action => `<article class="action"><div class="section-head"><b>${escapeHtml(action.action_type.replaceAll("_", " "))}</b><span class="tag">${escapeHtml(action.status.replaceAll("_", " "))}</span></div><p class="evidence">${escapeHtml(action.id)} · ${formatTime(action.created_at)}</p><p>${escapeHtml(action.payload.reason || action.payload.schedule?.target_zone || "Xem chi tiết bằng chứng trong hồ sơ công việc.")}</p>${action.status === "PENDING_APPROVAL" ? `<div class="row"><button data-approval="APPROVE" data-id="${action.id}">Đồng ý duyệt</button><button class="danger" data-approval="REJECT" data-id="${action.id}">Từ chối & Điều chỉnh</button></div>` : ""}${["APPROVED","EXECUTING"].includes(action.status) ? `<button class="secondary" data-verify="${action.id}">Xác minh dữ liệu phản hồi</button>` : ""}</article>`);
+  const actionCards = actions.map(action => `<article class="action"><div class="section-head"><b>${escapeHtml(action.action_type.replaceAll("_", " "))}</b><span class="tag">${escapeHtml(action.status.replaceAll("_", " "))}</span></div><p class="evidence">${escapeHtml(action.id)} · ${formatTime(action.created_at)}</p><p>${escapeHtml(action.payload.reason || action.payload.schedule?.target_zone || "Xem chi tiết bằng chứng trong hồ sơ công việc.")}</p>${action.status === "PENDING_APPROVAL" ? `<div class="row"><button data-approval="APPROVE" data-id="${action.id}">Đồng ý duyệt</button><button class="danger" data-approval="REJECT" data-id="${action.id}">Từ chối & Điều chỉnh</button></div>` : ""}${["APPROVED", "EXECUTING"].includes(action.status) ? `<button class="secondary" data-verify="${action.id}">Xác minh dữ liệu phản hồi</button>` : ""}</article>`);
   container.innerHTML = [...systemCards, ...actionCards].join("");
   document.querySelectorAll("[data-approval]").forEach(button => button.addEventListener("click", approveAction));
   document.querySelectorAll("[data-verify]").forEach(button => button.addEventListener("click", verifyAction));
@@ -378,27 +441,31 @@ async function loadActions() {
 
 async function approveAction(event) {
   const note = window.prompt("Nhập ghi chú điều chỉnh công việc hoặc nguyên nhân từ chối (không bắt buộc):", "") ?? "";
-  try { await api(`/api/actions/${event.target.dataset.id}/approval`, {method: "PATCH", body: JSON.stringify({decision: event.target.dataset.approval, operator_note: note})}); await loadActions(); }
+  try { await api(`/api/actions/${event.target.dataset.id}/approval`, { method: "PATCH", body: JSON.stringify({ decision: event.target.dataset.approval, operator_note: note }) }); await loadActions(); }
   catch (error) { window.alert(`Không thể cập nhật quyết định: ${JSON.stringify(error)}`); }
 }
 
 async function verifyAction(event) {
-  try { const result = await api(`/api/actions/${event.target.dataset.verify}/verify`, {method: "POST"}); window.alert(result.verification_status === "VERIFIED" ? "Verified with MQTT pump telemetry." : "No new MQTT actuator telemetry is available. The action remains unverified."); await loadActions(); }
+  try { const result = await api(`/api/actions/${event.target.dataset.verify}/verify`, { method: "POST" }); window.alert(result.verification_status === "VERIFIED" ? "Verified with MQTT pump telemetry." : "No new MQTT actuator telemetry is available. The action remains unverified."); await loadActions(); }
   catch (error) { window.alert(`Unable to verify the action: ${JSON.stringify(error)}`); }
 }
 
-function activateTab(name) { document.querySelectorAll(".tab").forEach(item => item.classList.toggle("active", item.dataset.tab === name)); document.querySelectorAll("main > .panel").forEach(panel => panel.classList.toggle("active", panel.id === name)); if (name === "map") renderFarmMap(); }
+function activateTab(name) {
+  document.querySelectorAll(".tab").forEach(item => item.classList.toggle("active", item.dataset.tab === name));
+  document.querySelectorAll("main > .panel").forEach(panel => panel.classList.toggle("active", panel.id === name));
+  if (name === "dashboard") renderFarmMap();
+}
 document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => activateTab(tab.dataset.tab)));
 document.querySelector("#run").addEventListener("click", runCoordination);
 document.querySelector("#refresh").addEventListener("click", () => { if (typeof refreshAll === "function") refreshAll(); });
 document.querySelector("#refresh-actions").addEventListener("click", loadActions);
 document.querySelectorAll(".prompt-btn").forEach(button => button.addEventListener("click", () => { document.querySelector("#scenario").value = button.dataset.prompt; }));
-document.querySelectorAll(".demo").forEach(button => button.addEventListener("click", async () => { await api("/api/demo/seed", {method: "POST", body: JSON.stringify({scenario: button.dataset.scenario})}); await loadTelemetry(); window.alert(`Demo scenario loaded: ${button.textContent}. Demo data cannot trigger a live MQTT AI decision.`); }));
+document.querySelectorAll(".demo").forEach(button => button.addEventListener("click", async () => { await api("/api/demo/seed", { method: "POST", body: JSON.stringify({ scenario: button.dataset.scenario }) }); await loadTelemetry(); window.alert(`Demo scenario loaded: ${button.textContent}. Demo data cannot trigger a live MQTT AI decision.`); }));
 
 function connectRealtime() {
   const protocol = location.protocol === "https:" ? "wss" : "ws";
   const socket = new WebSocket(`${protocol}://${location.host}/ws/telemetry`);
-  socket.onmessage = () => { loadTelemetry().catch(() => {}); loadSnapshot().catch(() => {}); loadActions().catch(() => {}); };
+  socket.onmessage = () => { loadTelemetry().catch(() => { }); loadSnapshot().catch(() => { }); loadActions().catch(() => { }); };
   socket.onclose = () => setTimeout(connectRealtime, 2000);
 }
 
@@ -409,7 +476,7 @@ async function refreshAll() {
   countdown = 10;
   const btn = document.querySelector("#refresh");
   if (btn) btn.textContent = `Làm mới dữ liệu (${countdown}s)`;
-  await Promise.all([loadTelemetry(), loadHealth()]).catch(() => {});
+  await Promise.all([loadTelemetry(), loadHealth()]).catch(() => { });
 }
 setInterval(() => {
   countdown--;

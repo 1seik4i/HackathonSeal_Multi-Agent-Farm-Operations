@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>FarmOps AI | Hệ thống Nông nghiệp Thông minh</title>
-  <link rel="stylesheet" href="/dashboard.css">
+  <link rel="stylesheet" href="./dashboard.css">
 </head>
 
 <body>
@@ -24,18 +24,20 @@
         <div id="health" class="tag">Đang kiểm tra trạng thái hệ thống...</div>
       </div>
     </header>
-    <nav class="tabs" aria-label="Điều hướng chính"><button class="tab active" data-tab="overview">Vận
-        hành</button><button class="tab" data-tab="agents">Cài đặt AI</button></nav>
+    <nav class="tabs" aria-label="Điều hướng chính">
+      <button class="tab active" data-tab="dashboard">Dashboard</button>
+      <button class="tab" data-tab="workflow">Xử lý nghiệp vụ</button>
+      <button class="tab" data-tab="setting">Setting</button>
+    </nav>
 
-    <section id="overview" class="panel active">
+    <section id="dashboard" class="panel active">
       <div class="stack">
         <section class="card executive-card">
           <div class="section-head">
             <div>
-              <!-- <div class="eyebrow">Tổng quan điều hành</div> -->
               <h2>Trạng thái nông trại</h2>
-              <!-- <p class="muted">Sức khỏe vận hành, rủi ro quyết định và khối lượng phê duyệt theo thời gian thực.</p> -->
-            </div><span id="snapshot-updated" class="evidence">Đang chờ dữ liệu cảm biến</span>
+            </div>
+            <span id="snapshot-updated" class="evidence">Đang chờ dữ liệu cảm biến</span>
           </div>
           <div class="kpi-grid">
             <article class="kpi"><span class="kpi-label">Độ phủ cảm biến</span><strong
@@ -57,12 +59,12 @@
               <div class="eyebrow">Dữ liệu trực tiếp</div>
               <h2>Xu hướng cảm biến</h2>
               <p class="muted">Lịch sử đo trong 30 phút gần nhất, lấy mẫu trực tiếp từ MQTT.</p>
-            </div><button id="refresh" class="secondary">Làm mới dữ liệu</button>
+            </div>
+            <button id="refresh" class="secondary">Làm mới dữ liệu</button>
           </div>
           <div id="sensor-trends" class="sensor-trends" aria-label="Xu hướng lịch sử của sáu cảm biến trực tiếp"></div>
           <div id="devices" class="devices"></div>
 
-          <!-- Chú thích thông tin cảm biến dành cho Data Scientist -->
           <div class="sensor-annotations">
             <div class="eyebrow">Chú thích thông số</div>
             <h3>Thông tin chi tiết các cảm biến</h3>
@@ -83,30 +85,44 @@
         </section>
 
 
+      </div>
+    </section>
+
+    <section id="workflow" class="panel">
+      <div class="stack">
         <section id="operations" class="workspace-grid">
           <article class="card">
-            <div class="eyebrow">Trợ lý AI Nông trại</div>
-            <h2>Yêu cầu Gợi ý Công việc · Vùng 1</h2>
-            <p class="muted">AI sẽ đọc dữ liệu trực tiếp từ MQTT và phối hợp nhiều tác tử (Agent) để phân tích, lập kế hoạch và đề xuất công việc.</p>
-            <p id="ai-selection-summary" class="tag">Chưa chọn nhà cung cấp AI. Mở Cài đặt AI để lựa chọn.</p>
-            
+            <div class="eyebrow">Trợ lý AI nông trại</div>
+            <h2>Yêu cầu gợi ý công việc · Vùng 1</h2>
+            <p class="muted">AI sẽ đọc dữ liệu trực tiếp từ MQTT và phối hợp nhiều tác tử để phân tích, lập kế hoạch và
+              đề xuất công việc.</p>
+            <p id="ai-selection-summary" class="tag">Chưa chọn nhà cung cấp AI. Mở phần Setting để lựa chọn.</p>
+
             <label for="scenario" style="margin-top: 10px;">Nhập yêu cầu hoặc chọn kịch bản mẫu:</label>
             <div class="preset-bar" style="margin-bottom: 8px;">
-              <button class="secondary prompt-btn" data-prompt="Hãy chuẩn bị kế hoạch tưới cho khu A trong hôm nay và giải thích dữ liệu đã sử dụng. Ưu tiên tiết kiệm nước, chỉ tưới khi độ ẩm đất thấp và mực nước bồn trên 30%.">Lập kế hoạch tưới</button>
-              <button class="secondary prompt-btn" data-prompt="Hãy kiểm tra phiên tưới hiện tại và chuẩn bị công việc cần thực hiện nếu kết quả không như mong đợi.">Kiểm tra hoạt động</button>
-              <button class="secondary prompt-btn" data-prompt="Dữ liệu một số cảm biến vừa ngừng cập nhật. Hãy tiếp tục lập kế hoạch công việc cho đội ngoài hiện trường.">Xử lý gián đoạn</button>
+              <button class="secondary prompt-btn"
+                data-prompt="Hãy chuẩn bị kế hoạch tưới cho khu A trong hôm nay và giải thích dữ liệu đã sử dụng. Ưu tiên tiết kiệm nước, chỉ tưới khi độ ẩm đất thấp và mực nước bồn trên 30%.">Lập
+                kế hoạch tưới</button>
+              <button class="secondary prompt-btn"
+                data-prompt="Hãy kiểm tra phiên tưới hiện tại và chuẩn bị công việc cần thực hiện nếu kết quả không như mong đợi.">Kiểm
+                tra hoạt động</button>
+              <button class="secondary prompt-btn"
+                data-prompt="Dữ liệu một số cảm biến vừa ngừng cập nhật. Hãy tiếp tục lập kế hoạch công việc cho đội ngoài hiện trường.">Xử
+                lý gián đoạn</button>
             </div>
-            <textarea id="scenario">Hãy chuẩn bị kế hoạch tưới cho khu A trong hôm nay và giải thích dữ liệu đã sử dụng. Ưu tiên tiết kiệm nước, chỉ tưới khi độ ẩm đất thấp và mực nước bồn trên 30%.</textarea>
-            
+            <textarea
+              id="scenario">Hãy chuẩn bị kế hoạch tưới cho khu A trong hôm nay và giải thích dữ liệu đã sử dụng. Ưu tiên tiết kiệm nước, chỉ tưới khi độ ẩm đất thấp và mực nước bồn trên 30%.</textarea>
+
             <div class="row" style="margin-top: 10px;">
-              <button id="run">Yêu cầu AI phân tích & Đề xuất</button>
+              <button id="run">Yêu cầu AI phân tích & đề xuất</button>
               <span id="run-status" class="status warn"></span>
             </div>
           </article>
           <article class="card">
             <div class="eyebrow">Bằng chứng và phân tích</div>
-            <h2>Gợi ý từ AI (Phân tích & Lập kế hoạch)</h2>
-            <div id="run-result" class="result-empty">Hệ thống đang chờ yêu cầu. AI sẽ giải thích quá trình phân tích dữ liệu MQTT và đưa ra các đề xuất công việc tại đây.</div>
+            <h2>Gợi ý từ AI (phân tích & lập kế hoạch)</h2>
+            <div id="run-result" class="result-empty">Hệ thống đang chờ yêu cầu. AI sẽ giải thích quá trình phân tích dữ
+              liệu MQTT và đưa ra các đề xuất công việc tại đây.</div>
           </article>
         </section>
 
@@ -114,36 +130,18 @@
           <div class="section-head">
             <div>
               <div class="eyebrow">Con người ra quyết định cuối cùng</div>
-              <h2>Phê duyệt & Điều chỉnh Công việc</h2>
-              <p class="muted">Duyệt qua các công việc do AI đề xuất. Bạn có thể đồng ý, từ chối, hoặc ghi chú chỉnh sửa trước khi giao việc cho nhân sự ngoài hiện trường.</p>
-            </div><button id="refresh-actions" class="secondary">Làm mới tác vụ</button>
+              <h2>Phê duyệt & điều chỉnh công việc</h2>
+              <p class="muted">Duyệt qua các công việc do AI đề xuất. Bạn có thể đồng ý, từ chối, hoặc ghi chú chỉnh sửa
+                trước khi giao việc cho nhân sự ngoài hiện trường.</p>
+            </div>
+            <button id="refresh-actions" class="secondary">Làm mới tác vụ</button>
           </div>
           <div id="actions-list" class="grid"></div>
         </section>
       </div>
     </section>
 
-    <section id="map" class="panel">
-      <div class="field-grid">
-        <section class="card">
-          <div class="section-head">
-            <div>
-              <div class="eyebrow">Vận hành hiện trường</div>
-              <h2>Vùng nông trại hợp nhất</h2>
-              <p class="muted">Sáu cảm biến trực tiếp được theo dõi trong một vùng. Cảm biến chỉ chuyển đỏ khi không
-                nhận dữ liệu quá 60 giây.</p>
-            </div>
-          </div><svg id="farm-map" class="farm-map" viewBox="0 0 860 420" preserveAspectRatio="xMidYMid meet"
-            aria-label="Một vùng nông trại có sáu cảm biến"></svg>
-          <div class="map-legend"><span class="legend-fresh">● Mới (đã báo dữ liệu trong 60 giây)</span><span
-              class="legend-offline">● Mất kết nối / chuyển đỏ sau 60 giây</span></div>
-        </section>
-        <aside id="map-history" class="card history-panel muted">Chọn một cảm biến trên bản đồ để xem năm bản ghi gần
-          nhất.</aside>
-      </div>
-    </section>
-
-    <section id="agents" class="panel">
+    <section id="setting" class="panel">
       <div class="card">
         <div class="section-head">
           <div>
@@ -165,8 +163,9 @@
         <div id="agent-selector" class="grid"></div>
       </div>
     </section>
+
   </main>
-  <script src="/app.js"></script>
+  <script src="./app.js"></script>
 </body>
 
 </html>
