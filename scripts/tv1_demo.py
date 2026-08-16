@@ -357,7 +357,7 @@ def demo_live():
             payload = json.loads(payload_str)
             
             print("\n" + "═"*70)
-            print(f"  {c('📥 CÓ TIN NHẮN MỚI TỪ MQTT', 'BOLD', 'GREEN')}")
+            print(f"  {c('📥 CÓ TIN NHẮN MỚI TỪ MQTT', 'GREEN')}")
             print("═"*70)
             
             show_json("1. INPUT GỐC (Raw Payload):", payload, "YELLOW")
