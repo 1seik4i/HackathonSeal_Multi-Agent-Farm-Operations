@@ -608,9 +608,9 @@ async function fetchLatestDialogueSummary() {
 const fetchDialogueSummaryBtn = document.querySelector("#fetch-dialogue-summary-btn");
 if (fetchDialogueSummaryBtn) {
   fetchDialogueSummaryBtn.addEventListener("click", async () => {
-    setRunStatus("Đang gọi GET /api/dialogue/summary để nạp tóm tắt...", "warn");
+    setRunStatus("Đang nạp tóm tắt đàm phán...", "warn");
     await fetchLatestDialogueSummary();
-    setRunStatus("Đã cập nhật tóm tắt đàm phán từ GET API.", "ok");
+    setRunStatus("Đã cập nhật tóm tắt đàm phán.", "ok");
   });
 }
 
