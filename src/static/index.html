@@ -1,15 +1,181 @@
 <!doctype html>
 <html lang="vi">
+
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>FarmOps AI</title>
-  <style>
-    :root{--bg:#07171c;--card:#0d292f;--line:#1e4b51;--text:#effffb;--muted:#a0c1bf;--green:#5be2ad;--orange:#ffc46b;--red:#ff8791}*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#061318,#102c2e);color:var(--text);font:15px Inter,Segoe UI,sans-serif}main{width:min(100%,920px);margin:auto;padding:20px}.eyebrow{color:var(--green);font-size:12px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase}h1{margin:6px 0 4px;font-size:clamp(31px,7vw,54px)}p{color:var(--muted)}.card{background:#0b2228dd;border:1px solid var(--line);border-radius:15px;padding:16px;margin:14px 0}.devices{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:9px}.device{padding:10px;background:#092027;border-radius:10px;border-left:3px solid var(--green)}button{background:var(--green);color:#062218;border:0;border-radius:9px;padding:11px 14px;font-weight:800;cursor:pointer}textarea{width:100%;min-height:84px;margin:10px 0;background:#071a20;border:1px solid var(--line);border-radius:9px;color:var(--text);padding:11px;font:inherit}pre{white-space:pre-wrap;word-break:break-word;background:#06171c;padding:12px;border-radius:9px;max-height:500px;overflow:auto}.warn{color:var(--orange)}@media(max-width:450px){main{padding:13px}.card{padding:13px}}
-  </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>FarmOps AI | Hệ thống Nông nghiệp Thông minh</title>
+  <link rel="stylesheet" href="/dashboard.css">
 </head>
-<body><main>
-  <div class="eyebrow">Team 2 · Multi-Agent Smart Agriculture</div><h1>FarmOps AI</h1><p>MQTT → Field IoT Agent → Planning → Resource → Tool/API → Verification</p>
-  <section class="card"><div class="eyebrow">IoT freshness</div><div id="devices" class="devices">Đang tải telemetry…</div></section>
-  <section class="card"><div class="eyebrow">Manager request</div><textarea id="request">Hãy chuẩn bị kế hoạch tưới cho khu A hôm nay và giải thích dữ liệu đã sử dụng.</textarea><button id="seed">Nạp dữ liệu mẫu</button> <button id="run">Phối hợp Agent</button><span id="status" class="warn"></span></section>
-  <section class="card"><div class="eyebrow">Agent trace & verification</div><pre id="result">Chưa có tác vụ.</pre></section>
-</main><script src="/app.js"></script></body></html>
+
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">◒</div>
+        <div>
+          <div class="eyebrow">Nhóm 2 · Nông nghiệp đa tác tử</div>
+          <h1>FarmOps AI</h1>
+          <p class="subtitle">Ra quyết định có căn cứ từ dữ liệu MQTT trực tiếp, các nhà cung cấp AI thực và quy trình
+            phê duyệt của con người.</p>
+        </div>
+      </div>
+      <div class="header-status">
+        <div id="health" class="tag">Đang kiểm tra trạng thái hệ thống...</div>
+      </div>
+    </header>
+    <nav class="tabs" aria-label="Điều hướng chính"><button class="tab active" data-tab="overview">Vận
+        hành</button><button class="tab" data-tab="map">Bản đồ nông trại</button><button class="tab"
+        data-tab="agents">Cài đặt AI</button></nav>
+
+    <section id="overview" class="panel active">
+      <div class="stack">
+        <section class="card executive-card">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Tổng quan điều hành</div>
+              <h2>Trạng thái nông trại</h2>
+              <p class="muted">Sức khỏe vận hành, rủi ro quyết định và khối lượng phê duyệt theo thời gian thực.</p>
+            </div><span id="snapshot-updated" class="evidence">Đang chờ dữ liệu cảm biến</span>
+          </div>
+          <div class="kpi-grid">
+            <article class="kpi"><span class="kpi-label">Độ phủ cảm biến</span><strong
+                id="kpi-coverage">—</strong><small id="kpi-coverage-note">trên tổng số 6 thiết bị</small></article>
+            <article class="kpi"><span class="kpi-label">Độ mới dữ liệu</span><strong
+                id="kpi-freshness">—</strong><small id="kpi-freshness-note">bằng chứng MQTT trực tiếp</small></article>
+            <article class="kpi"><span class="kpi-label">Tín hiệu cần chú ý</span><strong
+                id="kpi-attention">—</strong><small id="kpi-attention-note">bất thường hoặc mất kết nối</small>
+            </article>
+            <article class="kpi"><span class="kpi-label">Chờ phê duyệt</span><strong
+                id="kpi-approvals">—</strong><small>quyết định cần con người xác nhận</small></article>
+          </div>
+          <div id="executive-message" class="executive-message muted">Đang kết nối dữ liệu vận hành...</div>
+        </section>
+
+        <section class="card sensor-trends-section">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Dữ liệu trực tiếp</div>
+              <h2>Xu hướng cảm biến</h2>
+              <p class="muted">Lịch sử đo trong 30 phút gần nhất, lấy mẫu trực tiếp từ MQTT.</p>
+            </div><button id="refresh" class="secondary">Làm mới dữ liệu</button>
+          </div>
+          <div id="sensor-trends" class="sensor-trends" aria-label="Xu hướng lịch sử của sáu cảm biến trực tiếp"></div>
+          <div id="devices" class="devices"></div>
+
+          <!-- Chú thích thông tin cảm biến dành cho Data Scientist -->
+          <div class="sensor-annotations">
+            <div class="eyebrow">Chú thích thông số</div>
+            <h3>Thông tin chi tiết các cảm biến</h3>
+            <div class="annotation-grid">
+              <div class="annotation-item"><strong>SOIL_01:</strong> Đo độ ẩm (%) và nhiệt độ đất (°C) sâu dưới rễ cây.
+              </div>
+              <div class="annotation-item"><strong>WEATHER_01:</strong> Đo nhiệt độ không khí (°C) và độ ẩm môi trường
+                (%).</div>
+              <div class="annotation-item"><strong>PUMP_01:</strong> Giám sát lưu lượng (L/min), công suất (W) và trạng
+                thái của máy bơm.</div>
+              <div class="annotation-item"><strong>PH_01:</strong> Đo độ pH đất canh tác (ngưỡng tối ưu 5.5 - 7.5).
+              </div>
+              <div class="annotation-item"><strong>TANK_01:</strong> Đo mực nước dự trữ trong bồn chứa cung cấp nước
+                tưới (%).</div>
+              <div class="annotation-item"><strong>SUN_01:</strong> Đo cường độ bức xạ ánh sáng mặt trời (lux).</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Dữ liệu trình diễn</div>
+              <h2>Kịch bản nhanh</h2>
+              <p class="muted">Nạp bộ dữ liệu có kiểm soát để trình diễn giao diện. Dữ liệu mẫu không được dùng để kích
+                hoạt quyết định AI trực tiếp.</p>
+            </div>
+            <div class="preset-bar"><button class="secondary demo" data-scenario="normal">Bình thường</button><button
+                class="secondary demo" data-scenario="dry">Đất khô</button><button class="secondary demo"
+                data-scenario="stale">Dữ liệu cũ</button><button class="secondary demo" data-scenario="pump_failure">Lỗi
+                máy bơm</button></div>
+          </div>
+        </section>
+
+        <section id="operations" class="workspace-grid">
+          <article class="card">
+            <div class="eyebrow">Kịch bản vận hành</div>
+            <h2>Yêu cầu quyết định · Vùng nông trại 1</h2>
+            <p class="muted">Kịch bản xác định các ràng buộc vận hành. Mọi quyết định phải dẫn chứng dữ liệu MQTT còn
+              mới từ vùng canh tác.</p>
+            <p id="ai-selection-summary" class="tag">Chưa chọn nhà cung cấp AI. Mở Cài đặt AI để lựa chọn.</p><label
+              for="scenario">Kịch bản và ràng buộc vận hành</label><textarea
+              id="scenario">Ưu tiên tiết kiệm nước. Chỉ tưới Vùng nông trại 1 khi độ ẩm đất thấp, mực nước bồn trên 30% và máy bơm không có dấu hiệu bất thường.</textarea>
+            <div class="row"><button id="run">Chạy phối hợp AI</button><span id="run-status" class="status warn"></span>
+            </div>
+          </article>
+          <article class="card">
+            <div class="eyebrow">Bằng chứng và xác minh</div>
+            <h2>Kết quả quyết định AI</h2>
+            <div id="run-result" class="result-empty">Hãy cấu hình ít nhất ba nhà cung cấp AI sẵn sàng, nhập kịch bản và
+              chạy khi dữ liệu MQTT trực tiếp khả dụng.</div>
+          </article>
+        </section>
+
+        <section id="actions" class="card">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Con người trong quy trình</div>
+              <h2>Kế hoạch, nhiệm vụ và phê duyệt</h2>
+              <p class="muted">Xem bằng chứng, phê duyệt kế hoạch quan trọng và xác minh dữ liệu phản hồi từ thiết bị
+                chấp hành.</p>
+            </div><button id="refresh-actions" class="secondary">Làm mới tác vụ</button>
+          </div>
+          <div id="actions-list" class="grid"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="map" class="panel">
+      <div class="field-grid">
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Vận hành hiện trường</div>
+              <h2>Vùng nông trại hợp nhất</h2>
+              <p class="muted">Sáu cảm biến trực tiếp được theo dõi trong một vùng. Cảm biến chỉ chuyển đỏ khi không
+                nhận dữ liệu quá 60 giây.</p>
+            </div>
+          </div><svg id="farm-map" class="farm-map" viewBox="0 0 860 420" preserveAspectRatio="xMidYMid meet"
+            aria-label="Một vùng nông trại có sáu cảm biến"></svg>
+          <div class="map-legend"><span class="legend-fresh">● Mới (đã báo dữ liệu trong 60 giây)</span><span
+              class="legend-offline">● Mất kết nối / chuyển đỏ sau 60 giây</span></div>
+        </section>
+        <aside id="map-history" class="card history-panel muted">Chọn một cảm biến trên bản đồ để xem năm bản ghi gần
+          nhất.</aside>
+      </div>
+    </section>
+
+    <section id="agents" class="panel">
+      <div class="card">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Cấu hình bảo mật</div>
+            <h2>Cài đặt nhà cung cấp AI</h2>
+            <p class="muted">Kết nối nhà cung cấp và phân công vào quy trình phối hợp.</p>
+          </div>
+        </div>
+        <p class="key-note">Khóa API chỉ được gửi tới backend, không hiển thị lại và không lưu trong bộ nhớ trình duyệt.
+          Hãy kiểm tra kết nối thực trước khi chạy quyết định.</p>
+        <div id="agent-configs"></div>
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Phân công quy trình</div>
+            <h2>Chọn tác tử đang hoạt động</h2>
+            <p class="muted">Cần ít nhất ba nhà cung cấp ở trạng thái SẴN SÀNG.</p>
+          </div>
+        </div>
+        <div id="agent-selector" class="grid"></div>
+      </div>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+
+</html>
