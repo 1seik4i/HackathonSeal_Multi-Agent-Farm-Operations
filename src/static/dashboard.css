@@ -242,3 +242,81 @@ label { color: #334155; font-size: 12px; font-weight: 700; margin-bottom: 4px; d
   .mini-chart-value { font-size: 14px; }
   .preset-bar button { flex-basis: 100%; }
 }
+
+/* Mobile Bottom Navigation Bar & Mobile Touch Optimizations */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 62px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(203, 213, 225, 0.8);
+  z-index: 100;
+  justify-content: space-around;
+  align-items: center;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-nav-item .mobile-nav-icon {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.mobile-nav-item.active {
+  color: #1e40af;
+  background: #eff6ff;
+  font-weight: 700;
+}
+
+/* AI Dialogue Narrative Summary Banner */
+.dialogue-narrative-card {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border-left: 4px solid var(--blue);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #eff6ff, #e0f2fe);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+}
+
+.dialogue-narrative-card h3 {
+  margin: 0 0 6px;
+  color: #1e40af;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dialogue-narrative-card p {
+  margin: 0;
+  color: #1e3a8a;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-nav { display: flex; }
+  main.app-shell { padding-bottom: 76px !important; }
+  .tabs.nav-bar { display: none; }
+}
+

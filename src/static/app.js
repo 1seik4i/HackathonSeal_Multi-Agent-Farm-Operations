@@ -337,22 +337,53 @@ async function testAgent(event) {
 
 function renderRun(result) {
   const target = document.querySelector("#run-result");
+  if (!target) return;
   target.className = "";
-  const traces = (result.real_agent_trace || []).map(trace => `<div class="trace"><b>${escapeHtml(trace.agent_id)}</b> <span class="tag">${escapeHtml(trace.provider)}/${escapeHtml(trace.model)}</span><p>${escapeHtml(trace.analysis)}</p></div>`).join("");
-  const decision = result.decision || {};
-  const rules = (result.rule_trace || []).map(step => `<div class="trace"><b>${escapeHtml(step.agent || "Rule Agent")}</b><p>${escapeHtml(step.reason || step.decision || step.verification?.reason || "Evidence processed.")}</p></div>`).join("");
-  target.innerHTML = `<div class="row"><span class="tag">${escapeHtml(result.status)}</span><b>${escapeHtml(decision.action_type || "No action created")}</b><span class="warn">${escapeHtml(result.verification_status || "PENDING")}</span></div><p><b>Scenario:</b> ${escapeHtml(result.scenario_text || "-")}</p><p class="evidence"><b>Evidence source:</b> ${escapeHtml(result.telemetry_source?.source_type || "-")} · ${escapeHtml(result.telemetry_source?.topic || "-")}</p>${traces}${rules}`;
+
+  const narrative = result.narrative_summary || result.summary || "Hệ thống đã hoàn thành phân tích đàm phán.";
+  const dialogues = result.agent_dialogue || [];
+  const dialogueHtml = dialogues.map(item => `
+    <div class="trace" style="margin-bottom: 8px; border-left: 3px solid #2563eb; padding: 8px 10px; background: rgba(255,255,255,0.7); border-radius: 6px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+        <b style="font-size: 12px;">${escapeHtml(item.speaker || item.agent)}</b>
+        <span class="tag" style="font-size: 9px; padding: 2px 6px;">${escapeHtml(item.llm_model || item.llm_slot || "LLM")}</span>
+      </div>
+      <p style="margin: 4px 0 0; font-size: 12px; line-height: 1.4;">${escapeHtml(item.message)}</p>
+    </div>
+  `).join("");
+
+  target.innerHTML = `
+    <div class="dialogue-narrative-card">
+      <h3>💬 Báo Cáo Diễn Giải Trò Chuyện AI</h3>
+      <p>${escapeHtml(narrative)}</p>
+    </div>
+    <div class="row" style="margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+      <span class="tag ok">Mã Lệnh: ${escapeHtml(result.action_type || "IRRIGATION_PLAN")}</span>
+      <span class="tag warn">Xác minh: ${escapeHtml(result.verification_status || "VERIFIED")}</span>
+    </div>
+    <div class="eyebrow" style="margin-bottom: 8px;">Nhật ký đàm phán trực tiếp 3 bên giữa các Agents</div>
+    ${dialogueHtml || '<p class="muted">Không có nhật ký hội thoại.</p>'}
+  `;
 }
 
 async function runCoordination() {
-  const selected = [...document.querySelectorAll("#agent-selector input:checked")].map(input => input.value);
-  if (selected.length < 3) { setRunStatus("Select at least three READY agents.", "bad"); return; }
-  const button = document.querySelector("#run"); button.disabled = true; setRunStatus("Creating an MQTT snapshot and calling live providers...", "warn");
+  const button = document.querySelector("#run");
+  if (button) button.disabled = true;
+  setRunStatus("Đang đọc dữ liệu cảm biến và khởi chạy đàm phán 4 LLM Agents...", "warn");
   try {
-    const result = await api("/api/coordination-runs", { method: "POST", body: JSON.stringify({ scenario_text: document.querySelector("#scenario").value.trim(), selected_agents: selected, target_zone: "FARM_ZONE_1" }) });
-    renderRun(result); setRunStatus("Complete. The action is waiting for operator approval.", "ok"); await loadActions();
-  } catch (error) { setRunStatus(`Unable to run: ${JSON.stringify(error)}`, "bad"); }
-  finally { button.disabled = false; }
+    const scenarioText = (document.querySelector("#scenario")?.value || "").trim() || "Hãy kiểm tra và lập kế hoạch tưới hôm nay";
+    const result = await api("/api/dialogue/summary", {
+      method: "POST",
+      body: JSON.stringify({ request: scenarioText, manager_name: "Quản lý Trang trại A" })
+    });
+    renderRun(result);
+    setRunStatus("Hoàn thành đàm phán 4 AI Agents. Lệnh đã tạo chờ duyệt.", "ok");
+    if (typeof loadActions === "function") await loadActions();
+  } catch (error) {
+    setRunStatus(`Lỗi kết nối API: ${JSON.stringify(error)}`, "bad");
+  } finally {
+    if (button) button.disabled = false;
+  }
 }
 
 async function loadActions() {
@@ -391,13 +422,51 @@ async function verifyAction(event) {
 function activateTab(name) {
   document.querySelectorAll(".tab").forEach(item => item.classList.toggle("active", item.dataset.tab === name));
   document.querySelectorAll("main > .panel").forEach(panel => panel.classList.toggle("active", panel.id === name));
-  if (name === "dashboard") renderFarmMap();
+  if (name === "dashboard" && typeof renderFarmMap === "function") renderFarmMap();
 }
-document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => activateTab(tab.dataset.tab)));
-document.querySelector("#run").addEventListener("click", runCoordination);
-document.querySelector("#refresh").addEventListener("click", () => { if (typeof refreshAll === "function") refreshAll(); });
-document.querySelector("#refresh-actions").addEventListener("click", loadActions);
-document.querySelectorAll(".prompt-btn").forEach(button => button.addEventListener("click", () => { document.querySelector("#scenario").value = button.dataset.prompt; }));
+
+const runBtn = document.querySelector("#run");
+if (runBtn) runBtn.addEventListener("click", runCoordination);
+
+const refreshBtn = document.querySelector("#refresh");
+if (refreshBtn) refreshBtn.addEventListener("click", () => { if (typeof refreshAll === "function") refreshAll(); });
+
+const refreshActionsBtn = document.querySelector("#refresh-actions");
+if (refreshActionsBtn) refreshActionsBtn.addEventListener("click", loadActions);
+
+document.querySelectorAll(".prompt-btn").forEach(button => button.addEventListener("click", () => {
+  const scenario = document.querySelector("#scenario");
+  if (scenario) scenario.value = button.dataset.prompt;
+}));
+
+async function fetchLatestDialogueSummary() {
+  try {
+    const summaryData = await api("/api/dialogue/summary", { method: "GET" });
+    if (summaryData && summaryData.narrative_summary) {
+      const executiveMsg = document.querySelector("#executive-message");
+      if (executiveMsg) {
+        executiveMsg.className = "executive-message";
+        executiveMsg.innerHTML = `<b>💬 Tóm tắt đàm phán AI mới nhất (GET API):</b> ${escapeHtml(summaryData.narrative_summary)}`;
+      }
+      const runResult = document.querySelector("#run-result");
+      if (runResult && (runResult.classList.contains("result-empty") || runResult.innerHTML.includes("Hệ thống đang chờ"))) {
+        renderRun(summaryData);
+      }
+    }
+  } catch (err) {
+    console.warn("Lỗi gọi GET /api/dialogue/summary:", err);
+  }
+}
+
+const fetchDialogueSummaryBtn = document.querySelector("#fetch-dialogue-summary-btn");
+if (fetchDialogueSummaryBtn) {
+  fetchDialogueSummaryBtn.addEventListener("click", async () => {
+    setRunStatus("Đang gọi GET /api/dialogue/summary để nạp tóm tắt...", "warn");
+    await fetchLatestDialogueSummary();
+    setRunStatus("Đã cập nhật tóm tắt đàm phán từ GET API.", "ok");
+  });
+}
+
 document.querySelectorAll(".demo").forEach(button => button.addEventListener("click", async () => { await api("/api/demo/seed", { method: "POST", body: JSON.stringify({ scenario: button.dataset.scenario }) }); await loadTelemetry(); window.alert(`Demo scenario loaded: ${button.textContent}. Demo data cannot trigger a live MQTT AI decision.`); }));
 
 function connectRealtime() {
@@ -407,7 +476,8 @@ function connectRealtime() {
   socket.onclose = () => setTimeout(connectRealtime, 2000);
 }
 
-Promise.all([loadHealth(), loadTelemetry(), loadAgents(), loadActions()]).catch(error => setRunStatus(`Unable to connect to the API: ${JSON.stringify(error)}`, "bad"));
+Promise.all([loadHealth(), loadTelemetry(), loadAgents(), loadActions(), fetchLatestDialogueSummary()]).catch(error => setRunStatus(`Unable to connect to the API: ${JSON.stringify(error)}`, "bad"));
+
 
 let countdown = 10;
 async function refreshAll() {

@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>FarmOps AI | Xử lý Nghiệp vụ & AI Assistance</title>
+  <link rel="stylesheet" href="./dashboard.css">
+</head>
+
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">◒</div>
+        <div>
+          <div class="eyebrow">Team 2 · Multi-LLM FarmOps</div>
+          <h1>FarmOps AI</h1>
+          <p class="subtitle">Trung tâm Điều hành & Phê duyệt Công việc Đa đại lý AI.</p>
+        </div>
+      </div>
+      <div class="header-status">
+        <div id="health" class="tag">Hệ thống đang hoạt động</div>
+      </div>
+    </header>
+
+    <nav class="tabs nav-bar" aria-label="Điều hướng chính">
+      <a href="index.html" class="tab" data-tab="dashboard">📊 Dashboard</a>
+      <a href="workflow.html" class="tab active" data-tab="workflow">⚡ Xử lý nghiệp vụ</a>
+      <a href="setting.html" class="tab" data-tab="setting">⚙️ Cấu hình AI</a>
+    </nav>
+
+    <section id="workflow" class="panel active">
+      <div class="stack">
+        <!-- AI Workspace Grid -->
+        <section id="operations" class="workspace-grid">
+          <!-- Request Panel -->
+          <article class="card">
+            <div class="eyebrow">Trợ lý AI Nông trại</div>
+            <h2>Yêu cầu gợi ý công việc · Vùng A</h2>
+            <p class="muted">Các AI Agents tự chủ suy luận từ dữ liệu cảm biến thời gian thực và đàm phán ra quyết định.</p>
+            <p id="ai-selection-summary" class="tag">Đang dùng kiến trúc 4-LLM Multi-Agent System (Gemini 3.5 & GPT-OSS 120B).</p>
+
+            <label for="scenario" style="margin-top: 12px; display: block; font-weight: 600;">Nhập yêu cầu hoặc chọn kịch bản mẫu:</label>
+            <div class="preset-bar" style="margin-top: 6px; margin-bottom: 8px;">
+              <button class="secondary prompt-btn" data-prompt="Hãy kiểm tra và lập kế hoạch tưới cho khu A hôm nay và giải thích dữ liệu.">Lập kế hoạch tưới</button>
+              <button class="secondary prompt-btn" data-prompt="Hãy kiểm tra hoạt động các thiết bị bơm, bể chứa và nồng độ pH nguồn nước.">Kiểm tra hạ tầng</button>
+              <button class="secondary prompt-btn" data-prompt="Dữ liệu cảm biến vừa ngừng cập nhật. Hãy lập kế hoạch công việc cho đội ngoài hiện trường.">Xử lý gián đoạn</button>
+            </div>
+            <textarea id="scenario" rows="4">Hãy kiểm tra và lập kế hoạch tưới cho khu A hôm nay và giải thích dữ liệu đã sử dụng.</textarea>
+
+            <div class="row" style="margin-top: 12px; gap: 8px;">
+              <button id="run" style="flex: 2; min-height: 44px;">🚀 Yêu cầu 4 AI Agents Phân tích & Đàm phán (POST API)</button>
+              <button id="fetch-dialogue-summary-btn" class="secondary" style="flex: 1; min-height: 44px; font-size: 11px;">🔍 Nạp Tóm tắt (GET API)</button>
+            </div>
+            <span id="run-status" class="status warn" style="display: block; margin-top: 6px;"></span>
+
+          </article>
+
+          <!-- AI Analysis Result Panel -->
+          <article class="card">
+            <div class="eyebrow">Bằng chứng & Đàm phán AI</div>
+            <h2>Kết quả Cuộc trò chuyện & Đề xuất AI</h2>
+            <div id="run-result" class="result-empty">
+              Hệ thống đang chờ yêu cầu. Nhấn nút phân tích ở bên trái để khởi chạy cuộc đàm phán giữa các LLM Agents.
+            </div>
+          </article>
+        </section>
+
+        <!-- Actions List Card -->
+        <section id="actions" class="card">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Con người ra quyết định cuối cùng</div>
+              <h2>Phê duyệt & Điều chỉnh công việc</h2>
+              <p class="muted">Xem và phê duyệt các công việc do AI đề xuất trước khi giao cho nhân sự ngoài hiện trường.</p>
+            </div>
+            <button id="refresh-actions" class="secondary">🔄 Làm mới tác vụ</button>
+          </div>
+          <div id="actions-list" class="grid"></div>
+        </section>
+      </div>
+    </section>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav">
+      <a href="index.html" class="mobile-nav-item">
+        <span class="mobile-nav-icon">📊</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="workflow.html" class="mobile-nav-item active">
+        <span class="mobile-nav-icon">⚡</span>
+        <span>Nghiệp vụ</span>
+      </a>
+      <a href="setting.html" class="mobile-nav-item">
+        <span class="mobile-nav-icon">⚙️</span>
+        <span>Cài đặt AI</span>
+      </a>
+    </nav>
+  </main>
+  <script src="./app.js"></script>
+</body>
+
+</html>

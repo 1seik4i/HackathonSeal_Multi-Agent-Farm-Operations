@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>FarmOps AI | Cấu hình AI & API Keys</title>
+  <link rel="stylesheet" href="./dashboard.css">
+</head>
+
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">◒</div>
+        <div>
+          <div class="eyebrow">Team 2 · Multi-LLM FarmOps</div>
+          <h1>FarmOps AI</h1>
+          <p class="subtitle">Quản lý 4 LLM Agents & Kết nối API Keys.</p>
+        </div>
+      </div>
+      <div class="header-status">
+        <div id="health" class="tag">Hệ thống đang hoạt động</div>
+      </div>
+    </header>
+
+    <nav class="tabs nav-bar" aria-label="Điều hướng chính">
+      <a href="index.html" class="tab" data-tab="dashboard">📊 Dashboard</a>
+      <a href="workflow.html" class="tab" data-tab="workflow">⚡ Xử lý nghiệp vụ</a>
+      <a href="setting.html" class="tab active" data-tab="setting">⚙️ Cấu hình AI</a>
+    </nav>
+
+    <section id="setting" class="panel active">
+      <div class="card">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Cấu hình mô hình AI</div>
+            <h2>Cài đặt 4 LLM Provider Slots</h2>
+            <p class="muted">Quản lý API Keys độc lập cho 4 Agent (Google Gemini 3.5 & OpenAI GPT-OSS 120B).</p>
+          </div>
+        </div>
+        <p class="key-note">Khóa API được lưu an toàn trong file <code>api_keys.env</code> của backend. Bạn có thể kiểm tra kết nối live trực tiếp tại đây.</p>
+        
+        <div id="agent-configs"></div>
+
+        <div class="section-head" style="margin-top: 20px;">
+          <div>
+            <div class="eyebrow">Phân công quy trình</div>
+            <h2>Trạng thái phân công Tác tử</h2>
+            <p class="muted">Mỗi Agent vận hành độc lập trên 1 slot LLM riêng biệt.</p>
+          </div>
+        </div>
+        <div id="agent-selector" class="grid"></div>
+      </div>
+    </section>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav">
+      <a href="index.html" class="mobile-nav-item">
+        <span class="mobile-nav-icon">📊</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="workflow.html" class="mobile-nav-item">
+        <span class="mobile-nav-icon">⚡</span>
+        <span>Nghiệp vụ</span>
+      </a>
+      <a href="setting.html" class="mobile-nav-item active">
+        <span class="mobile-nav-icon">⚙️</span>
+        <span>Cài đặt AI</span>
+      </a>
+    </nav>
+  </main>
+  <script src="./app.js"></script>
+</body>
+
+</html>
