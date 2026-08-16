@@ -1,0 +1,8 @@
+.env
+.venv/
+tests/
+farmops.db
+__pycache__/
+*.py[cod]
+.git/
+

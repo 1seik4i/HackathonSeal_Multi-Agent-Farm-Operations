@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>FarmOps AI</title>
+  <style>
+    :root{--bg:#07171c;--card:#0d292f;--line:#1e4b51;--text:#effffb;--muted:#a0c1bf;--green:#5be2ad;--orange:#ffc46b;--red:#ff8791}*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#061318,#102c2e);color:var(--text);font:15px Inter,Segoe UI,sans-serif}main{width:min(100%,920px);margin:auto;padding:20px}.eyebrow{color:var(--green);font-size:12px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase}h1{margin:6px 0 4px;font-size:clamp(31px,7vw,54px)}p{color:var(--muted)}.card{background:#0b2228dd;border:1px solid var(--line);border-radius:15px;padding:16px;margin:14px 0}.devices{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:9px}.device{padding:10px;background:#092027;border-radius:10px;border-left:3px solid var(--green)}button{background:var(--green);color:#062218;border:0;border-radius:9px;padding:11px 14px;font-weight:800;cursor:pointer}textarea{width:100%;min-height:84px;margin:10px 0;background:#071a20;border:1px solid var(--line);border-radius:9px;color:var(--text);padding:11px;font:inherit}pre{white-space:pre-wrap;word-break:break-word;background:#06171c;padding:12px;border-radius:9px;max-height:500px;overflow:auto}.warn{color:var(--orange)}@media(max-width:450px){main{padding:13px}.card{padding:13px}}
+  </style>
+</head>
+<body><main>
+  <div class="eyebrow">Team 2 · Multi-Agent Smart Agriculture</div><h1>FarmOps AI</h1><p>MQTT → Field IoT Agent → Planning → Resource → Tool/API → Verification</p>
+  <section class="card"><div class="eyebrow">IoT freshness</div><div id="devices" class="devices">Đang tải telemetry…</div></section>
+  <section class="card"><div class="eyebrow">Manager request</div><textarea id="request">Hãy chuẩn bị kế hoạch tưới cho khu A hôm nay và giải thích dữ liệu đã sử dụng.</textarea><button id="seed">Nạp dữ liệu mẫu</button> <button id="run">Phối hợp Agent</button><span id="status" class="warn"></span></section>
+  <section class="card"><div class="eyebrow">Agent trace & verification</div><pre id="result">Chưa có tác vụ.</pre></section>
+</main><script src="/app.js"></script></body></html>

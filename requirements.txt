@@ -1,0 +1,6 @@
+fastapi>=0.110,<1
+uvicorn[standard]>=0.28,<1
+paho-mqtt>=2,<3
+pydantic>=2.6,<3
+python-dotenv>=1,<2
+
