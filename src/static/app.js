@@ -89,6 +89,7 @@ function renderExecutiveSummary() {
   document.querySelector("#snapshot-updated").textContent = reporting ? `Cập nhật lúc ${new Date().toLocaleTimeString("vi-VN")}` : "Đang chờ dữ liệu cảm biến";
 
   const message = document.querySelector("#executive-message");
+  message.style.display = ""; // Reset display by default
   if (!latestHealth.mqtt_configured) {
     message.className = "executive-message bad";
     message.textContent = "Luồng quyết định chưa khả dụng vì MQTT chưa được cấu hình.";
@@ -99,11 +100,9 @@ function renderExecutiveSummary() {
     message.className = "executive-message warn";
     message.textContent = `${attention} tín hiệu cảm biến cần được kiểm tra trước khi phê duyệt quyết định vận hành.`;
   } else if (reporting === 6 && isLiveMqtt) {
-    message.className = "executive-message ok";
-    message.textContent = "Tất cả hệ thống được giám sát đang báo dữ liệu bình thường với bằng chứng MQTT trực tiếp.";
+    message.style.display = "none";
   } else {
-    message.className = "executive-message muted";
-    message.textContent = "Đang kết nối dữ liệu vận hành...";
+    message.style.display = "none";
   }
 }
 
@@ -368,20 +367,20 @@ async function loadActions() {
   const pending = actions.filter(action => action.status === "PENDING_APPROVAL");
   const displayDevice = device => device === "PUMP_01" ? "PUMP_1" : device;
   const systemCards = [
-    `<article class="action action-system"><div class="section-head"><div class="action-title"><span class="action-icon">PL</span><b>Live Monitoring Plan</b></div><span class="tag ${mqttLive.length === 6 && !offline.length ? "ok" : "warn"}">${mqttLive.length === 6 && !offline.length ? "ACTIVE" : "DEGRADED"}</span></div><p>Continuously monitor all six sensors in Farm Zone 1 with a 60-second reporting deadline.</p><p class="evidence">Evidence: ${mqttLive.length}/6 devices reporting from MQTT · Updated from live telemetry</p></article>`,
-    `<article class="action action-system"><div class="section-head"><div class="action-title"><span class="action-icon">TK</span><b>Sensor Inspection Task</b></div><span class="tag ${offline.length ? "bad" : "ok"}">${offline.length ? "ACTION REQUIRED" : "NOT REQUIRED"}</span></div><p>${offline.length ? `Inspect ${offline.map(displayDevice).join(", ")} because no reading was received within 60 seconds.` : "No manual inspection is required. Every sensor reported within the last 60 seconds."}</p><p class="evidence">Evidence: ${reporting.length}/6 sensors available · Timeout rule: 60 seconds</p></article>`,
-    `<article class="action action-system"><div class="section-head"><div class="action-title"><span class="action-icon">AP</span><b>Approval Queue</b></div><span class="tag ${pending.length ? "warn" : "ok"}">${pending.length ? `${pending.length} PENDING` : "CLEAR"}</span></div><p>${pending.length ? "AI-generated operational decisions are waiting for a manager decision." : "No critical plan is waiting for approval. New AI actions will appear here with supporting evidence."}</p><p class="evidence">Human approval gate · AI actions cannot self-approve</p></article>`,
+    `<article class="action action-system"><div class="section-head"><div class="action-title"><span class="action-icon">PL</span><b>Kế hoạch Giám sát Trực tiếp</b></div><span class="tag ${mqttLive.length === 6 && !offline.length ? "ok" : "warn"}">${mqttLive.length === 6 && !offline.length ? "HOẠT ĐỘNG" : "GIÁN ĐOẠN"}</span></div><p>Liên tục giám sát tất cả 6 cảm biến tại Vùng 1 với thời hạn báo cáo 60 giây.</p><p class="evidence">Bằng chứng: ${mqttLive.length}/6 thiết bị đang gửi dữ liệu MQTT</p></article>`,
+    `<article class="action action-system"><div class="section-head"><div class="action-title"><span class="action-icon">TK</span><b>Nhiệm vụ Kiểm tra Thiết bị</b></div><span class="tag ${offline.length ? "bad" : "ok"}">${offline.length ? "CẦN HÀNH ĐỘNG" : "KHÔNG YÊU CẦU"}</span></div><p>${offline.length ? `Cần kiểm tra ${offline.map(displayDevice).join(", ")} vì không nhận được tín hiệu trong 60 giây qua.` : "Không yêu cầu kiểm tra thủ công. Mọi cảm biến đều hoạt động tốt trong 60 giây qua."}</p><p class="evidence">Bằng chứng: ${reporting.length}/6 cảm biến phản hồi</p></article>`,
+    `<article class="action action-system"><div class="section-head"><div class="action-title"><span class="action-icon">AP</span><b>Hàng đợi Phê duyệt</b></div><span class="tag ${pending.length ? "warn" : "ok"}">${pending.length ? `${pending.length} ĐANG CHỜ` : "TRỐNG"}</span></div><p>${pending.length ? "Có quyết định vận hành từ AI đang chờ quản lý phê duyệt." : "Không có công việc nào chờ duyệt. Quyết định của AI sẽ xuất hiện tại đây kèm theo bằng chứng."}</p><p class="evidence">Chốt chặn phê duyệt của con người · AI không thể tự động phê duyệt</p></article>`,
   ];
-  const actionCards = actions.map(action => `<article class="action"><div class="section-head"><b>${escapeHtml(action.action_type.replaceAll("_", " "))}</b><span class="tag">${escapeHtml(action.status.replaceAll("_", " "))}</span></div><p class="evidence">${escapeHtml(action.id)} · ${formatTime(action.created_at)}</p><p>${escapeHtml(action.payload.reason || action.payload.schedule?.target_zone || "Review supporting evidence in the action record.")}</p>${action.status === "PENDING_APPROVAL" ? `<div class="row"><button data-approval="APPROVE" data-id="${action.id}">Approve</button><button class="danger" data-approval="REJECT" data-id="${action.id}">Reject</button></div>` : ""}${["APPROVED","EXECUTING"].includes(action.status) ? `<button class="secondary" data-verify="${action.id}">Verify actuator telemetry</button>` : ""}</article>`);
+  const actionCards = actions.map(action => `<article class="action"><div class="section-head"><b>${escapeHtml(action.action_type.replaceAll("_", " "))}</b><span class="tag">${escapeHtml(action.status.replaceAll("_", " "))}</span></div><p class="evidence">${escapeHtml(action.id)} · ${formatTime(action.created_at)}</p><p>${escapeHtml(action.payload.reason || action.payload.schedule?.target_zone || "Xem chi tiết bằng chứng trong hồ sơ công việc.")}</p>${action.status === "PENDING_APPROVAL" ? `<div class="row"><button data-approval="APPROVE" data-id="${action.id}">Đồng ý duyệt</button><button class="danger" data-approval="REJECT" data-id="${action.id}">Từ chối & Điều chỉnh</button></div>` : ""}${["APPROVED","EXECUTING"].includes(action.status) ? `<button class="secondary" data-verify="${action.id}">Xác minh dữ liệu phản hồi</button>` : ""}</article>`);
   container.innerHTML = [...systemCards, ...actionCards].join("");
   document.querySelectorAll("[data-approval]").forEach(button => button.addEventListener("click", approveAction));
   document.querySelectorAll("[data-verify]").forEach(button => button.addEventListener("click", verifyAction));
 }
 
 async function approveAction(event) {
-  const note = window.prompt("Operator note (optional):", "") ?? "";
+  const note = window.prompt("Nhập ghi chú điều chỉnh công việc hoặc nguyên nhân từ chối (không bắt buộc):", "") ?? "";
   try { await api(`/api/actions/${event.target.dataset.id}/approval`, {method: "PATCH", body: JSON.stringify({decision: event.target.dataset.approval, operator_note: note})}); await loadActions(); }
-  catch (error) { window.alert(`Unable to update the action: ${JSON.stringify(error)}`); }
+  catch (error) { window.alert(`Không thể cập nhật quyết định: ${JSON.stringify(error)}`); }
 }
 
 async function verifyAction(event) {
@@ -392,8 +391,9 @@ async function verifyAction(event) {
 function activateTab(name) { document.querySelectorAll(".tab").forEach(item => item.classList.toggle("active", item.dataset.tab === name)); document.querySelectorAll("main > .panel").forEach(panel => panel.classList.toggle("active", panel.id === name)); if (name === "map") renderFarmMap(); }
 document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => activateTab(tab.dataset.tab)));
 document.querySelector("#run").addEventListener("click", runCoordination);
-document.querySelector("#refresh").addEventListener("click", loadTelemetry);
+document.querySelector("#refresh").addEventListener("click", () => { if (typeof refreshAll === "function") refreshAll(); });
 document.querySelector("#refresh-actions").addEventListener("click", loadActions);
+document.querySelectorAll(".prompt-btn").forEach(button => button.addEventListener("click", () => { document.querySelector("#scenario").value = button.dataset.prompt; }));
 document.querySelectorAll(".demo").forEach(button => button.addEventListener("click", async () => { await api("/api/demo/seed", {method: "POST", body: JSON.stringify({scenario: button.dataset.scenario})}); await loadTelemetry(); window.alert(`Demo scenario loaded: ${button.textContent}. Demo data cannot trigger a live MQTT AI decision.`); }));
 
 function connectRealtime() {
@@ -404,6 +404,23 @@ function connectRealtime() {
 }
 
 Promise.all([loadHealth(), loadTelemetry(), loadAgents(), loadActions()]).catch(error => setRunStatus(`Unable to connect to the API: ${JSON.stringify(error)}`, "bad"));
-setInterval(() => Promise.all([loadTelemetry(), loadHealth()]).catch(() => {}), 10000);
+
+let countdown = 10;
+async function refreshAll() {
+  countdown = 10;
+  const btn = document.querySelector("#refresh");
+  if (btn) btn.textContent = `Làm mới dữ liệu (${countdown}s)`;
+  await Promise.all([loadTelemetry(), loadHealth()]).catch(() => {});
+}
+setInterval(() => {
+  countdown--;
+  if (countdown <= 0) {
+    refreshAll();
+  } else {
+    const btn = document.querySelector("#refresh");
+    if (btn) btn.textContent = `Làm mới dữ liệu (${countdown}s)`;
+  }
+}, 1000);
+
 connectRealtime();
 
