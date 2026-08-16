@@ -31,7 +31,7 @@ class ManagerRequest(BaseModel):
 class AgentConfigRequest(BaseModel):
     provider: Provider
     model: str = Field(min_length=2, max_length=120)
-    api_key: str = Field(min_length=8, max_length=1000)
+    api_key: str = Field(default="", max_length=1000)
     enabled: bool = True
 
 class AgentConfigView(BaseModel):

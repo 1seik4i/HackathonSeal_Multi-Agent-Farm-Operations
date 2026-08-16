@@ -315,7 +315,6 @@ async function saveAgent(event) {
   const card = event.target.closest("[data-agent]");
   const key = card.querySelector(".api-key").value.trim();
   const message = card.querySelector(".agent-message");
-  if (!key) { message.textContent = "Enter an API key to save or update this provider. Stored keys cannot be read back."; return; }
   event.target.disabled = true;
   try {
     await api(`/api/agents/${card.dataset.agent}/config`, {method: "PUT", body: JSON.stringify({provider: card.querySelector(".provider").value, model: card.querySelector(".model").value.trim(), api_key: key, enabled: card.querySelector(".enabled").checked})});
