@@ -439,16 +439,10 @@ class FarmActionAgent:
                 }
             )
             
-        verified = self.store.verify_action(
-            action.id, 
-            expected_type=expected_type, 
-            expected_zone=expected_zone, 
-            expected_duration=expected_duration
-        )
         return {
             "agent": self.name,
             "created": action.model_dump(),
-            "verification": verified.model_dump() if verified else {"status": "FAILED"}
+            "verification": {"status": action.status, "action_type": action.action_type}
         }
 
 

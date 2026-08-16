@@ -31,7 +31,7 @@ class ManagerRequest(BaseModel):
 class AgentConfigRequest(BaseModel):
     provider: Provider
     model: str = Field(min_length=2, max_length=120)
-    api_key: str = Field(min_length=8, max_length=1000)
+    api_key: str = Field(default="", min_length=0, max_length=1000)
     enabled: bool = True
 
 class AgentConfigView(BaseModel):
@@ -42,6 +42,7 @@ class AgentConfigView(BaseModel):
     model: str
     enabled: bool
     has_api_key: bool
+    has_custom_key: bool = False
     connection_status: Literal["NOT_CONFIGURED", "TESTING", "READY", "FAILED"]
     last_tested_at: float | None = None
     last_error: str | None = None

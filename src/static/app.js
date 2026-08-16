@@ -280,12 +280,12 @@ async function loadSnapshot() {
 function renderAgentSelector() {
   document.querySelector("#agent-selector").innerHTML = agentConfigs.map(agent => `
     <label class="agent">
-      <span style="display: flex; align-items: center; gap: 8px; font-weight: bold; color: var(--text);">
+      <span class="agent-title">
         <input type="checkbox" value="${agent.agent_id}" ${agent.enabled && agent.connection_status === "READY" ? "checked" : ""}>
-        ${escapeHtml(agent.display_name)}
+        <span class="agent-name">${escapeHtml(agent.display_name)}</span>
       </span>
-      <span style="margin-left: 22px; font-size: 12px; color: var(--muted);">${escapeHtml(agent.role)}</span>
-      <span style="margin-left: 22px; font-size: 11px; margin-top: 2px; color: var(--muted);">
+      <span class="agent-role">${escapeHtml(agent.role)}</span>
+      <span class="agent-meta">
         <span class="${agent.connection_status === "READY" ? "ok" : "warn"}">${agent.connection_status === 'READY' ? 'SẴN SÀNG' : statusVi(agent.connection_status)}</span> · ${escapeHtml(agent.provider)}/${escapeHtml(agent.model)}
       </span>
     </label>
@@ -300,7 +300,7 @@ function renderAgentSelector() {
 }
 
 function renderAgentConfigs() {
-  document.querySelector("#agent-configs").innerHTML = agentConfigs.map(agent => `<article class="agent" data-agent="${agent.agent_id}"><div class="section-head"><div><b>${escapeHtml(agent.display_name)}</b><p class="muted">${escapeHtml(agent.role)}</p></div><span class="tag ${agent.connection_status === "READY" ? "ok" : "warn"}">${agent.connection_status}</span></div><div class="two"><label>Provider<select class="provider"><option value="openai" ${agent.provider === "openai" ? "selected" : ""}>ChatGPT / OpenAI</option><option value="gemini" ${agent.provider === "gemini" ? "selected" : ""}>Google Gemini</option><option value="anthropic" ${agent.provider === "anthropic" ? "selected" : ""}>Claude / Anthropic</option><option value="deepseek" ${agent.provider === "deepseek" ? "selected" : ""}>DeepSeek</option></select></label><label>Model<input class="model" value="${escapeHtml(agent.model)}" maxlength="120"></label></div><label>API key<input class="api-key" type="password" autocomplete="new-password" placeholder="Enter a new or replacement API key"></label><label><input class="enabled" type="checkbox" ${agent.enabled ? "checked" : ""}> Enable this provider</label><div class="row"><button class="save-agent secondary">Save settings</button><button class="test-agent">Test connection</button></div><span class="agent-message evidence">${agent.has_api_key ? "Key stored securely in the backend" : "No API key configured"}${agent.last_error ? ` · ${escapeHtml(agent.last_error)}` : ""}</span></article>`).join("");
+  document.querySelector("#agent-configs").innerHTML = agentConfigs.map(agent => `<article class="agent" data-agent="${agent.agent_id}"><div class="section-head"><div class="agent-header-info"><b class="agent-name">${escapeHtml(agent.display_name)}</b><p class="muted">${escapeHtml(agent.role)}</p></div><span class="tag ${agent.connection_status === "READY" ? "ok" : "warn"}">${agent.connection_status}</span></div><div class="two"><label>Provider<select class="provider"><option value="openai" ${agent.provider === "openai" ? "selected" : ""}>ChatGPT / OpenAI</option><option value="gemini" ${agent.provider === "gemini" ? "selected" : ""}>Google Gemini</option><option value="anthropic" ${agent.provider === "anthropic" ? "selected" : ""}>Claude / Anthropic</option><option value="deepseek" ${agent.provider === "deepseek" ? "selected" : ""}>DeepSeek</option></select></label><label>Model<input class="model" value="${escapeHtml(agent.model)}" maxlength="120"></label></div><label>API key<input class="api-key" type="password" autocomplete="new-password" placeholder="Enter a new or replacement API key"></label><label><input class="enabled" type="checkbox" ${agent.enabled ? "checked" : ""}> Enable this provider</label><div class="row"><button class="save-agent secondary">Save settings</button><button class="test-agent">Test connection</button></div><span class="agent-message evidence">${agent.has_api_key ? (agent.has_custom_key ? "Đã nhập API key tùy chỉnh (ưu tiên dùng)" : "Tự động dùng API key mặc định trong .env") : "Chưa có API key"}${agent.last_error ? ` · ${escapeHtml(agent.last_error)}` : ""}</span></article>`).join("");
   document.querySelectorAll(".save-agent").forEach(button => button.addEventListener("click", saveAgent));
   document.querySelectorAll(".test-agent").forEach(button => button.addEventListener("click", testAgent));
 }
@@ -315,11 +315,10 @@ async function saveAgent(event) {
   const card = event.target.closest("[data-agent]");
   const key = card.querySelector(".api-key").value.trim();
   const message = card.querySelector(".agent-message");
-  if (!key) { message.textContent = "Enter an API key to save or update this provider. Stored keys cannot be read back."; return; }
   event.target.disabled = true;
   try {
     await api(`/api/agents/${card.dataset.agent}/config`, { method: "PUT", body: JSON.stringify({ provider: card.querySelector(".provider").value, model: card.querySelector(".model").value.trim(), api_key: key, enabled: card.querySelector(".enabled").checked }) });
-    message.textContent = "Saved securely in the backend. Test the connection to mark this provider ready.";
+    message.textContent = key ? "Đã lưu API key tùy chỉnh." : "Đã lưu (đang tự động dùng API key mặc định trong .env).";
     card.querySelector(".api-key").value = "";
     await loadAgents();
   } catch (error) { message.textContent = `Unable to save: ${JSON.stringify(error)}`; }
@@ -337,11 +336,74 @@ async function testAgent(event) {
 
 function renderRun(result) {
   const target = document.querySelector("#run-result");
-  target.className = "";
-  const traces = (result.real_agent_trace || []).map(trace => `<div class="trace"><b>${escapeHtml(trace.agent_id)}</b> <span class="tag">${escapeHtml(trace.provider)}/${escapeHtml(trace.model)}</span><p>${escapeHtml(trace.analysis)}</p></div>`).join("");
+  if (!target) return;
+  target.className = "run-result-card";
+  
   const decision = result.decision || {};
-  const rules = (result.rule_trace || []).map(step => `<div class="trace"><b>${escapeHtml(step.agent || "Rule Agent")}</b><p>${escapeHtml(step.reason || step.decision || step.verification?.reason || "Evidence processed.")}</p></div>`).join("");
-  target.innerHTML = `<div class="row"><span class="tag">${escapeHtml(result.status)}</span><b>${escapeHtml(decision.action_type || "No action created")}</b><span class="warn">${escapeHtml(result.verification_status || "PENDING")}</span></div><p><b>Scenario:</b> ${escapeHtml(result.scenario_text || "-")}</p><p class="evidence"><b>Evidence source:</b> ${escapeHtml(result.telemetry_source?.source_type || "-")} · ${escapeHtml(result.telemetry_source?.topic || "-")}</p>${traces}${rules}`;
+  const isIrrigation = decision.action_type === "IRRIGATION_PLAN";
+  const actionTypeLabel = isIrrigation ? "Kế hoạch tưới" : (decision.action_type ? decision.action_type.replaceAll("_", " ") : "Nhiệm vụ hiện trường");
+  const statusLabel = statusVi(result.verification_status || decision.status || "PENDING");
+  const telemetry = result.telemetry_snapshot || {};
+  
+  const evidencePills = Object.entries(telemetry).map(([dev, data]) => {
+    const m = data.metrics || {};
+    let val = dev;
+    if (dev === "SOIL_01") val = `Đất ${m.soil_moisture ?? "—"}%`;
+    else if (dev === "WEATHER_01") val = `Thời tiết ${m.temperature ?? "—"}°C`;
+    else if (dev === "PUMP_01") val = `Bơm ${m.flow_rate ?? "—"} L/min`;
+    else if (dev === "PH_01") val = `pH ${m.ph ?? "—"}`;
+    else if (dev === "TANK_01") val = `Bồn ${m.level ?? m.tank_level ?? "—"}%`;
+    else if (dev === "SUN_01") val = `Sáng ${m.lux ?? "—"} lux`;
+    return `<span class="evidence-pill">${escapeHtml(val)}</span>`;
+  }).join("");
+
+  const agentTraces = (result.real_agent_trace || []).map(trace => {
+    const name = agentNameVi(trace.agent_id);
+    return `
+      <div class="agent-trace-card">
+        <div class="agent-trace-head">
+          <b>${escapeHtml(name)}</b>
+          <span class="tag">${escapeHtml(trace.provider)}/${escapeHtml(trace.model)}</span>
+        </div>
+        <p class="agent-trace-text">${escapeHtml(trace.analysis)}</p>
+      </div>
+    `;
+  }).join("");
+
+  const summaryText = result.ai_summary || result.ai_executive_summary || result.summary || "Đã phân tích xong dữ liệu cảm biến.";
+
+  target.innerHTML = `
+    <div class="run-header">
+      <div class="run-title-group">
+        <span class="tag ok">${escapeHtml(result.status || "COMPLETED")}</span>
+        <strong class="action-name">${escapeHtml(actionTypeLabel)}</strong>
+      </div>
+      <span class="tag warn">${escapeHtml(statusLabel)}</span>
+    </div>
+    
+    <div class="user-request-box">
+      <small>Yêu cầu từ người dùng:</small>
+      <p>"${escapeHtml(result.scenario_text || "-")}"</p>
+    </div>
+
+    <div class="ai-summary-box">
+      <div class="ai-summary-head">
+        <span class="ai-icon">✨</span>
+        <b>Phân tích & Trả lời từ AI:</b>
+      </div>
+      <p>${escapeHtml(summaryText)}</p>
+    </div>
+
+    <div class="evidence-strip">
+      <small>Dữ liệu cảm biến thực tế (${escapeHtml(result.telemetry_source?.source_type || "MQTT")}):</small>
+      <div class="evidence-pills">${evidencePills}</div>
+    </div>
+
+    <div class="agent-traces-section">
+      <small>Chi tiết phân tích từ các Tác tử AI:</small>
+      ${agentTraces}
+    </div>
+  `;
 }
 
 async function runCoordination() {
