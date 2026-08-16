@@ -273,15 +273,27 @@ def demo_mongodb():
         health = store.health_check()
         show_json("📊 MongoDB status:", health, "GREEN" if health["status"] == "ok" else "RED")
         
-        step_header(2, "GHI DỮ LIỆU TEST")
+        step_header(2, "GHI DỮ LIỆU TEST (Giả lập cả 6 sensors)")
         processor = IoTDataProcessor(stale_after_seconds=300)
-        test_data = processor.process({
-            "device_code": "SOIL_01",
-            "timestamp": time.time(),
-            "metrics": {"soil_moisture": 35.0, "temperature": 29.5}
-        })
-        doc_id = store.ingest(test_data)
-        show_result("Document ID:", doc_id)
+        
+        sensors = [
+            ("SOIL_01", {"soil_moisture": 35.0, "temperature": 29.5}),
+            ("WEATHER_01", {"temperature": 32.0, "humidity": 60.0}),
+            ("PUMP_01", {"flow_rate": 120.0, "power": 1500.0}),
+            ("PH_01", {"ph": 6.5}),
+            ("TANK_01", {"level": 80.0}),
+            ("SUN_01", {"lux": 50000.0})
+        ]
+        
+        for device_code, metrics in sensors:
+            test_data = processor.process({
+                "device_code": device_code,
+                "timestamp": time.time(),
+                "metrics": metrics
+            })
+            store.ingest(test_data)
+        
+        print(f"  {c(f'✓ Đã ghi giả lập {len(sensors)} sensors vào MongoDB', 'GREEN')}")
         
         step_header(3, "ĐỌC LẠI — latest_by_device()")
         latest = store.latest_by_device()
