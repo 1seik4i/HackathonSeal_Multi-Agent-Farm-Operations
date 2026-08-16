@@ -527,20 +527,52 @@ async function loadActions() {
   latestActions = actions;
   renderExecutiveSummary();
   const container = document.querySelector("#actions-list");
-  const now = Date.now() / 1000;
-  const reporting = knownDevices.filter(device => latestTelemetry[device]);
-  const offline = knownDevices.filter(device => !latestTelemetry[device] || now - latestTelemetry[device].timestamp > SENSOR_TIMEOUT_SECONDS);
-  const mqttLive = reporting.filter(device => latestTelemetry[device].source_type === "MQTT");
-  const pending = actions.filter(action => action.status === "PENDING_APPROVAL");
-  const displayDevice = device => device === "PUMP_01" ? "PUMP_1" : device;
-  const systemCards = [
-    `<article class="action action-system"><div class="section-head"><div class="action-title"><span class="action-icon">PL</span><b>Kế hoạch Giám sát Trực tiếp</b></div><span class="tag ${mqttLive.length === 6 && !offline.length ? "ok" : "warn"}">${mqttLive.length === 6 && !offline.length ? "HOẠT ĐỘNG" : "GIÁN ĐOẠN"}</span></div><p>Liên tục giám sát tất cả 6 cảm biến tại Vùng 1 với thời hạn báo cáo 60 giây.</p><p class="evidence">Bằng chứng: ${mqttLive.length}/6 thiết bị đang gửi dữ liệu MQTT</p></article>`,
-    `<article class="action action-system"><div class="section-head"><div class="action-title"><span class="action-icon">TK</span><b>Nhiệm vụ Kiểm tra Thiết bị</b></div><span class="tag ${offline.length ? "bad" : "ok"}">${offline.length ? "CẦN HÀNH ĐỘNG" : "KHÔNG YÊU CẦU"}</span></div><p>${offline.length ? `Cần kiểm tra ${offline.map(displayDevice).join(", ")} vì không nhận được tín hiệu trong 60 giây qua.` : "Không yêu cầu kiểm tra thủ công. Mọi cảm biến đều hoạt động tốt trong 60 giây qua."}</p><p class="evidence">Bằng chứng: ${reporting.length}/6 cảm biến phản hồi</p></article>`,
-    `<article class="action action-system"><div class="section-head"><div class="action-title"><span class="action-icon">AP</span><b>Hàng đợi Phê duyệt</b></div><span class="tag ${pending.length ? "warn" : "ok"}">${pending.length ? `${pending.length} ĐANG CHỜ` : "TRỐNG"}</span></div><p>${pending.length ? "Có quyết định vận hành từ AI đang chờ quản lý phê duyệt." : "Không có công việc nào chờ duyệt. Quyết định của AI sẽ xuất hiện tại đây kèm theo bằng chứng."}</p><p class="evidence">Chốt chặn phê duyệt của con người · AI không thể tự động phê duyệt</p></article>`,
-  ];
+  if (!container) return;
+
   const displayableActions = actions.filter(action => !(action.action_type === "FIELD_TASK" && action.status === "CREATED"));
-  const actionCards = displayableActions.map(action => `<article class="action"><div class="section-head"><b>${escapeHtml(action.action_type.replaceAll("_", " "))}</b><span class="tag">${escapeHtml(action.status.replaceAll("_", " "))}</span></div><p class="evidence">${escapeHtml(action.id)} · ${formatTime(action.created_at)}</p><p>${escapeHtml(action.payload.reason || action.payload.schedule?.target_zone || "Xem chi tiết bằng chứng trong hồ sơ công việc.")}</p>${action.status === "PENDING_APPROVAL" ? `<div class="row"><button data-approval="APPROVE" data-id="${action.id}">Đồng ý duyệt</button><button class="danger" data-approval="REJECT" data-id="${action.id}">Từ chối & Điều chỉnh</button></div>` : ""}${["APPROVED", "EXECUTING"].includes(action.status) ? `<button class="secondary" data-verify="${action.id}">Xác minh dữ liệu phản hồi</button>` : ""}</article>`);
-  container.innerHTML = [...systemCards, ...actionCards].join("");
+
+  if (displayableActions.length === 0) {
+    container.innerHTML = `<div class="result-empty" style="grid-column: 1 / -1;">Hiện chưa có tác vụ nào cần phê duyệt. Các đề xuất do AI khởi tạo sẽ xuất hiện tại đây.</div>`;
+    return;
+  }
+
+  const actionCards = displayableActions.map(action => {
+    const isPending = action.status === "PENDING_APPROVAL";
+    const isApproved = ["APPROVED", "EXECUTING"].includes(action.status);
+    const isVerified = action.status === "VERIFIED";
+    const isRejected = action.status === "REJECTED";
+
+    let statusTagClass = "tag";
+    let statusText = statusVi(action.status);
+    if (isPending) { statusTagClass = "tag tag-warning"; statusText = "CHỜ PHÊ DUYỆT"; }
+    else if (isApproved || isVerified) { statusTagClass = "tag tag-success"; statusText = isVerified ? "ĐÃ XÁC MINH" : "ĐÃ PHÊ DUYỆT"; }
+    else if (isRejected) { statusTagClass = "tag tag-danger"; statusText = "ĐÃ TỪ CHỐI"; }
+
+    const typeLabel = actionTypeVi(action.action_type);
+    const reasonText = action.payload?.reason || action.payload?.schedule?.target_zone || "Xem chi tiết bằng chứng trong hồ sơ công việc.";
+
+    return `
+      <article class="action-card">
+        <div class="action-card-head">
+          <b>${escapeHtml(typeLabel)}</b>
+          <span class="${statusTagClass}">${escapeHtml(statusText)}</span>
+        </div>
+        <p class="action-card-meta">Mã: ${escapeHtml(action.id)} · ${formatTime(action.created_at)}</p>
+        <p class="action-card-body">${escapeHtml(reasonText)}</p>
+        <div class="action-card-actions">
+          ${isPending ? `
+            <button class="btn-primary btn-sm" data-approval="APPROVE" data-id="${action.id}">Đồng ý duyệt</button>
+            <button class="danger btn-sm" data-approval="REJECT" data-id="${action.id}">Từ chối</button>
+          ` : ""}
+          ${isApproved ? `
+            <button class="btn-secondary btn-sm" data-verify="${action.id}">Xác minh dữ liệu</button>
+          ` : ""}
+        </div>
+      </article>
+    `;
+  });
+
+  container.innerHTML = actionCards.join("");
   document.querySelectorAll("[data-approval]").forEach(button => button.addEventListener("click", approveAction));
   document.querySelectorAll("[data-verify]").forEach(button => button.addEventListener("click", verifyAction));
 }
@@ -580,6 +612,9 @@ if (refreshBtn) refreshBtn.addEventListener("click", () => { if (typeof refreshA
 
 const refreshActionsBtn = document.querySelector("#refresh-actions");
 if (refreshActionsBtn) refreshActionsBtn.addEventListener("click", loadActions);
+
+const clearActionsBtn = document.querySelector("#clear-actions");
+if (clearActionsBtn) clearActionsBtn.addEventListener("click", clearActionsHistory);
 
 document.querySelectorAll(".prompt-btn").forEach(button => button.addEventListener("click", () => {
   const scenario = document.querySelector("#scenario");

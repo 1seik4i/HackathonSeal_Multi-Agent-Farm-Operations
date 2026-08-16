@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-  <title>FarmOps AI | Xử lý Nghiệp vụ & Đàm phán AI</title>
+  <title>FarmOps AI | Xử lý Nghiệp vụ AI</title>
   <link rel="stylesheet" href="./dashboard.css">
 </head>
 
@@ -37,20 +37,27 @@
             <div>
               <div class="eyebrow">Trợ lý AI tự chủ</div>
               <h2>Yêu cầu gợi ý công việc vận hành</h2>
-              <p class="subtitle-text">4 AI Agents sẽ tự phân tích dữ liệu cảm biến thời gian thực và đàm phán ra quyết định.</p>
+
             </div>
           </div>
 
           <label for="scenario" class="form-label">Chọn kịch bản mẫu hoặc nhập yêu cầu trực tiếp:</label>
           <div class="preset-bar">
-            <button class="btn-secondary prompt-btn" data-prompt="Hãy kiểm tra và lập kế hoạch tưới cho khu A hôm nay và giải thích dữ liệu.">Lập kế hoạch tưới</button>
-            <button class="btn-secondary prompt-btn" data-prompt="Hãy kiểm tra hoạt động các thiết bị bơm, bể chứa và nồng độ pH nguồn nước.">Kiểm tra hạ tầng</button>
-            <button class="btn-secondary prompt-btn" data-prompt="Dữ liệu cảm biến vừa ngừng cập nhật. Hãy lập kế hoạch công việc cho đội ngoài hiện trường.">Xử lý gián đoạn</button>
+            <button class="btn-secondary prompt-btn"
+              data-prompt="Hãy kiểm tra và lập kế hoạch tưới cho khu A hôm nay và giải thích dữ liệu.">Lập kế hoạch
+              tưới</button>
+            <button class="btn-secondary prompt-btn"
+              data-prompt="Hãy kiểm tra hoạt động các thiết bị bơm, bể chứa và nồng độ pH nguồn nước.">Kiểm tra hạ
+              tầng</button>
+            <button class="btn-secondary prompt-btn"
+              data-prompt="Dữ liệu cảm biến vừa ngừng cập nhật. Hãy lập kế hoạch công việc cho đội ngoài hiện trường.">Xử
+              lý gián đoạn</button>
           </div>
-          <textarea id="scenario" rows="3" class="form-textarea">Hãy kiểm tra và lập kế hoạch tưới cho khu A hôm nay và giải thích dữ liệu đã sử dụng.</textarea>
+          <textarea id="scenario" rows="3"
+            class="form-textarea">Hãy kiểm tra và lập kế hoạch tưới cho khu A hôm nay và giải thích dữ liệu đã sử dụng.</textarea>
 
           <div class="btn-group-right" style="margin-top: 14px;">
-            <button id="run" class="btn-primary" style="min-height: 48px;">Khởi chạy đàm phán 4 AI Agents</button>
+            <button id="run" class="btn-primary" style="min-height: 48px;">Khởi chạy </button>
           </div>
           <div id="run-status" class="status-box"></div>
         </section>
@@ -63,7 +70,7 @@
               <h2>Báo cáo tóm tắt & Nhật ký trò chuyện AI</h2>
             </div>
           </div>
-          
+
           <div id="run-result" class="result-empty">
             Hệ thống đang chờ yêu cầu. Nhấn nút đàm phán ở trên để khởi chạy trao đổi giữa các LLM Agents.
           </div>
@@ -73,12 +80,13 @@
         <section id="actions" class="card">
           <div class="section-head">
             <div>
-              <div class="eyebrow">Phê duyệt con người</div>
-              <h2>Danh sách lệnh hành động chờ duyệt</h2>
-              <p class="subtitle-text">Con người đưa ra quyết định duyệt hoặc từ chối trước khi thi hành ngoài hiện trường.</p>
+              <div class="eyebrow">Phê duyệt lệnh vận hành</div>
+              <h2>Danh sách tác vụ chờ duyệt</h2>
+              <p class="subtitle-text">Duyệt hoặc từ chối các đề xuất vận hành do AI khởi tạo trước khi thi hành.</p>
             </div>
             <div class="btn-group-right">
               <button id="refresh-actions" class="btn-secondary">Làm mới tác vụ</button>
+              <button id="clear-actions" class="btn-secondary danger">Xóa danh sách tác vụ</button>
             </div>
           </div>
           <div id="actions-list" class="grid"></div>
