@@ -343,26 +343,26 @@ function renderRun(result) {
   const narrative = result.narrative_summary || result.summary || "Hệ thống đã hoàn thành phân tích đàm phán.";
   const dialogues = result.agent_dialogue || [];
   const dialogueHtml = dialogues.map(item => `
-    <div class="trace" style="margin-bottom: 8px; border-left: 3px solid #2563eb; padding: 8px 10px; background: rgba(255,255,255,0.7); border-radius: 6px;">
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
-        <b style="font-size: 12px;">${escapeHtml(item.speaker || item.agent)}</b>
-        <span class="tag" style="font-size: 9px; padding: 2px 6px;">${escapeHtml(item.llm_model || item.llm_slot || "LLM")}</span>
+    <div class="trace">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+        <b style="font-size: 14px;">${escapeHtml(item.speaker || item.agent)}</b>
+        <span class="tag">${escapeHtml(item.llm_model || item.llm_slot || "LLM")}</span>
       </div>
-      <p style="margin: 4px 0 0; font-size: 12px; line-height: 1.4;">${escapeHtml(item.message)}</p>
+      <p style="margin: 6px 0 0; font-size: 14px; line-height: 1.5;">${escapeHtml(item.message)}</p>
     </div>
   `).join("");
 
   target.innerHTML = `
     <div class="dialogue-narrative-card">
-      <h3>💬 Báo Cáo Diễn Giải Trò Chuyện AI</h3>
+      <h3>Báo cáo diễn giải cuộc trò chuyện AI</h3>
       <p>${escapeHtml(narrative)}</p>
     </div>
-    <div class="row" style="margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
-      <span class="tag ok">Mã Lệnh: ${escapeHtml(result.action_type || "IRRIGATION_PLAN")}</span>
-      <span class="tag warn">Xác minh: ${escapeHtml(result.verification_status || "VERIFIED")}</span>
+    <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+      <span class="tag tag-success">Mã Lệnh: ${escapeHtml(result.action_type || "IRRIGATION_PLAN")}</span>
+      <span class="tag">Trạng thái: ${escapeHtml(result.verification_status || "VERIFIED")}</span>
     </div>
-    <div class="eyebrow" style="margin-bottom: 8px;">Nhật ký đàm phán trực tiếp 3 bên giữa các Agents</div>
-    ${dialogueHtml || '<p class="muted">Không có nhật ký hội thoại.</p>'}
+    <div class="eyebrow" style="margin-bottom: 8px;">Nhật ký trao đổi đàm phán giữa các Agents</div>
+    ${dialogueHtml || '<p class="subtitle-text">Chưa có nhật ký trao đổi.</p>'}
   `;
 }
 
@@ -446,7 +446,7 @@ async function fetchLatestDialogueSummary() {
       const executiveMsg = document.querySelector("#executive-message");
       if (executiveMsg) {
         executiveMsg.className = "executive-message";
-        executiveMsg.innerHTML = `<b>💬 Tóm tắt đàm phán AI mới nhất (GET API):</b> ${escapeHtml(summaryData.narrative_summary)}`;
+        executiveMsg.innerHTML = `<b>Tóm tắt chỉ đạo đàm phán AI gần nhất:</b> ${escapeHtml(summaryData.narrative_summary)}`;
       }
       const runResult = document.querySelector("#run-result");
       if (runResult && (runResult.classList.contains("result-empty") || runResult.innerHTML.includes("Hệ thống đang chờ"))) {

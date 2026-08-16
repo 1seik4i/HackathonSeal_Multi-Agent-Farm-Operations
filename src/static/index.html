@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-  <title>FarmOps AI | Dashboard Trạng thái Nông trại</title>
+  <title>FarmOps AI | Tổng quan Nông trại</title>
   <link rel="stylesheet" href="./dashboard.css">
 </head>
 
@@ -12,89 +12,80 @@
   <main class="app-shell">
     <header class="app-header">
       <div class="brand">
-        <div class="brand-mark" aria-hidden="true">◒</div>
+        <div class="brand-badge">2</div>
         <div>
-          <div class="eyebrow">Team 2 · Multi-LLM FarmOps</div>
-          <h1>FarmOps AI</h1>
-          <p class="subtitle">Hệ thống Nông nghiệp Thông minh đa đại lý AI tự chủ.</p>
+          <h1 class="brand-title">FarmOps AI</h1>
         </div>
       </div>
       <div class="header-status">
-        <div id="health" class="tag">Hệ thống đang hoạt động</div>
+        <div id="health" class="tag tag-success">Hệ thống sẵn sàng</div>
       </div>
     </header>
 
     <nav class="tabs nav-bar" aria-label="Điều hướng chính">
-      <a href="index.html" class="tab active" data-tab="dashboard">📊 Dashboard</a>
-      <a href="workflow.html" class="tab" data-tab="workflow">⚡ Xử lý nghiệp vụ</a>
-      <a href="setting.html" class="tab" data-tab="setting">⚙️ Cấu hình AI</a>
+      <a href="index.html" class="tab active" data-tab="dashboard">Tổng quan</a>
+      <a href="sensors.html" class="tab" data-tab="sensors">Cảm biến IoT</a>
+      <a href="workflow.html" class="tab" data-tab="workflow">Nghiệp vụ AI</a>
+      <a href="setting.html" class="tab" data-tab="setting">Cấu hình AI</a>
     </nav>
 
     <section id="dashboard" class="panel active">
       <div class="stack">
-        <!-- KPI Card -->
+        <!-- Card 1: Executive Summary -->
         <section class="card executive-card">
           <div class="section-head">
             <div>
-              <div class="eyebrow">Tổng quan thời gian thực</div>
-              <h2>Trạng thái nông trại</h2>
+              <div class="eyebrow">Thời gian thực</div>
+              <h2>Trạng thái vận hành nông trại</h2>
             </div>
-            <span id="snapshot-updated" class="evidence">Đang chờ dữ liệu cảm biến</span>
+            <span id="snapshot-updated" class="evidence-badge">Đang cập nhật...</span>
           </div>
+
           <div class="kpi-grid">
-            <article class="kpi"><span class="kpi-label">Độ phủ cảm biến</span><strong id="kpi-coverage">—</strong><small id="kpi-coverage-note">trên 6 thiết bị</small></article>
-            <article class="kpi"><span class="kpi-label">Độ mới dữ liệu</span><strong id="kpi-freshness">—</strong><small id="kpi-freshness-note">bằng chứng MQTT/Atlas</small></article>
-            <article class="kpi"><span class="kpi-label">Tín hiệu chú ý</span><strong id="kpi-attention">—</strong><small id="kpi-attention-note">cần kiểm tra</small></article>
-            <article class="kpi"><span class="kpi-label">Chờ phê duyệt</span><strong id="kpi-approvals">—</strong><small>lệnh chờ người duyệt</small></article>
+            <article class="kpi">
+              <span class="kpi-label">Độ phủ cảm biến</span>
+              <strong id="kpi-coverage">—</strong>
+              <small id="kpi-coverage-note">trên 6 thiết bị</small>
+            </article>
+            <article class="kpi">
+              <span class="kpi-label">Tốc độ dữ liệu</span>
+              <strong id="kpi-freshness">—</strong>
+              <small id="kpi-freshness-note">bằng chứng MQTT / Atlas</small>
+            </article>
+            <article class="kpi">
+              <span class="kpi-label">Tín hiệu chú ý</span>
+              <strong id="kpi-attention">—</strong>
+              <small id="kpi-attention-note">cần kiểm tra</small>
+            </article>
+            <article class="kpi">
+              <span class="kpi-label">Chờ phê duyệt</span>
+              <strong id="kpi-approvals">—</strong>
+              <small>quyết định cần duyệt</small>
+            </article>
           </div>
-          <div id="executive-message" class="executive-message muted">Đang kết nối dữ liệu vận hành...</div>
+
+          <div id="executive-message" class="executive-message">Đang kết nối dữ liệu vận hành...</div>
         </section>
 
-        <!-- Sensor Trends & Cards -->
-        <section class="card sensor-trends-section">
+        <!-- Card 2: Interactive Farm Map -->
+        <section id="map" class="card">
           <div class="section-head">
             <div>
-              <div class="eyebrow">Dữ liệu trực tiếp</div>
-              <h2>Xu hướng cảm biến IoT</h2>
-              <p class="muted">Lịch sử đo 30 phút gần nhất từ MQTT / MongoDB Atlas (TV1 Pipeline).</p>
-            </div>
-            <button id="refresh" class="secondary">🔄 Làm mới</button>
-          </div>
-          <div id="sensor-trends" class="sensor-trends" aria-label="Xu hướng cảm biến"></div>
-          <div id="devices" class="devices"></div>
-
-          <div class="sensor-annotations" style="margin-top: 14px;">
-            <div class="eyebrow">Chú thích thông số</div>
-            <h3>Thông tin chi tiết 6 thiết bị</h3>
-            <div class="annotation-grid">
-              <div class="annotation-item"><strong>SOIL_01:</strong> Đo độ ẩm đất (%) và nhiệt độ đất (°C) sâu dưới gốc cây.</div>
-              <div class="annotation-item"><strong>WEATHER_01:</strong> Đo nhiệt độ không khí (°C) và độ ẩm môi trường (%).</div>
-              <div class="annotation-item"><strong>PUMP_01:</strong> Giám sát lưu lượng (L/min) và công suất máy bơm (W).</div>
-              <div class="annotation-item"><strong>PH_01:</strong> Đo độ pH nguồn nước tưới (dải an toàn 5.5 - 7.5).</div>
-              <div class="annotation-item"><strong>TANK_01:</strong> Đo mức nước dự trữ bồn chứa (%) (ngưỡng an toàn &gt;= 25%).</div>
-              <div class="annotation-item"><strong>SUN_01:</strong> Đo cường độ bức xạ ánh sáng mặt trời (lux).</div>
+              <div class="eyebrow">Sơ đồ vị trí</div>
+              <h2>Vùng nông trại hợp nhất</h2>
+              <p class="subtitle-text">Giám sát vị trí 6 thiết bị cảm biến trường. Đèn xanh: dữ liệu mới trong 300 giây.</p>
             </div>
           </div>
-        </section>
-
-        <!-- Interactive Map -->
-        <section id="map" class="card">
+          
           <div class="field-grid">
-            <section class="card inner-panel">
-              <div class="section-head">
-                <div>
-                  <div class="eyebrow">Sơ đồ hiện trường</div>
-                  <h2>Vùng nông trại hợp nhất</h2>
-                  <p class="muted">Sơ đồ 6 cảm biến trường. Đèn xanh: dữ liệu mới (&lt;= 300s). Đèn đỏ: quá 300s hoặc mất kết nối.</p>
-                </div>
-              </div>
-              <svg id="farm-map" class="farm-map" viewBox="0 0 860 420" preserveAspectRatio="xMidYMid meet" aria-label="Sơ đồ nông trại 6 cảm biến"></svg>
+            <div class="map-container">
+              <svg id="farm-map" class="farm-map" viewBox="0 0 860 420" preserveAspectRatio="xMidYMid meet" aria-label="Sơ đồ 6 cảm biến"></svg>
               <div class="map-legend">
-                <span class="legend-fresh">● Mới (FRESH &lt;= 300s)</span>
-                <span class="legend-offline">● Mất kết nối / Cũ (STALE/MISSING)</span>
+                <span class="legend-item legend-fresh">Dữ liệu mới (FRESH &lt;= 300s)</span>
+                <span class="legend-item legend-offline">Cần kiểm tra (STALE / MISSING)</span>
               </div>
-            </section>
-            <aside id="map-history" class="card history-panel muted">Chọn 1 cảm biến trên sơ đồ để xem lịch sử đo 5 bản ghi gần nhất.</aside>
+            </div>
+            <aside id="map-history" class="history-panel">Chọn 1 cảm biến trên sơ đồ để xem 5 bản ghi gần nhất.</aside>
           </div>
         </section>
       </div>
@@ -102,18 +93,10 @@
 
     <!-- Mobile Bottom Navigation Bar -->
     <nav class="mobile-bottom-nav">
-      <a href="index.html" class="mobile-nav-item active">
-        <span class="mobile-nav-icon">📊</span>
-        <span>Dashboard</span>
-      </a>
-      <a href="workflow.html" class="mobile-nav-item">
-        <span class="mobile-nav-icon">⚡</span>
-        <span>Nghiệp vụ</span>
-      </a>
-      <a href="setting.html" class="mobile-nav-item">
-        <span class="mobile-nav-icon">⚙️</span>
-        <span>Cài đặt AI</span>
-      </a>
+      <a href="index.html" class="mobile-nav-item active">Tổng quan</a>
+      <a href="sensors.html" class="mobile-nav-item">Cảm biến</a>
+      <a href="workflow.html" class="mobile-nav-item">Nghiệp vụ</a>
+      <a href="setting.html" class="mobile-nav-item">Cấu hình</a>
     </nav>
   </main>
   <script src="./app.js"></script>
