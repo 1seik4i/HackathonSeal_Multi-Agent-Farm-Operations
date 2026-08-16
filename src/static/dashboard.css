@@ -889,21 +889,10 @@ select:focus {
 .bar-soil,
 .bar-weather,
 .bar-pump,
+.bar-ph,
 .bar-tank,
 .bar-sun {
   background: linear-gradient(90deg, #3b82f6, #1d4ed8);
-}
-
-.ph-meter-wrap {
-  overflow: visible;
-  position: relative;
-}
-
-.ph-gradient-bar {
-  width: 100%;
-  height: 8px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #93c5fd 0%, #2563eb 50%, #1e40af 100%);
 }
 
 .ph-pointer {

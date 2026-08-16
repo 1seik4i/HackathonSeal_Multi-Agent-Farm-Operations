@@ -182,12 +182,13 @@ function updateSensorFigures(data) {
   const phData = data["PH_01"]?.metrics || {};
   const phVal = phData.ph ?? "—";
   const phEl = document.querySelector("#fig-ph-val");
-  const phPointer = document.querySelector("#fig-ph-pointer");
+  const phBar = document.querySelector("#fig-ph-bar");
   const phStatus = document.querySelector("#fig-ph-status");
   const phTag = document.querySelector("#fig-ph-tag");
 
   if (phEl) phEl.textContent = `${phVal} pH`;
-  if (phPointer) phPointer.style.left = `${Math.max(0, Math.min(100, (Number(phVal) / 14) * 100 || 50))}%`;
+  const phPct = phVal !== "—" ? Math.max(0, Math.min(100, (Number(phVal) / 14) * 100)) : 0;
+  if (phBar) phBar.style.width = `${phPct.toFixed(1)}%`;
   if (phStatus && phTag) {
     if (phVal !== "—" && Number(phVal) >= 5.5 && Number(phVal) <= 7.5) {
       phStatus.className = "figure-badge badge-ok";
