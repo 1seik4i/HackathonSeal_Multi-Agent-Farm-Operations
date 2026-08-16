@@ -337,84 +337,52 @@ async function testAgent(event) {
 function renderRun(result) {
   const target = document.querySelector("#run-result");
   if (!target) return;
-  target.className = "run-result-card";
-  
-  const decision = result.decision || {};
-  const isIrrigation = decision.action_type === "IRRIGATION_PLAN";
-  const actionTypeLabel = isIrrigation ? "Kế hoạch tưới" : (decision.action_type ? decision.action_type.replaceAll("_", " ") : "Nhiệm vụ hiện trường");
-  const statusLabel = statusVi(result.verification_status || decision.status || "PENDING");
-  const telemetry = result.telemetry_snapshot || {};
-  
-  const evidencePills = Object.entries(telemetry).map(([dev, data]) => {
-    const m = data.metrics || {};
-    let val = dev;
-    if (dev === "SOIL_01") val = `Đất ${m.soil_moisture ?? "—"}%`;
-    else if (dev === "WEATHER_01") val = `Thời tiết ${m.temperature ?? "—"}°C`;
-    else if (dev === "PUMP_01") val = `Bơm ${m.flow_rate ?? "—"} L/min`;
-    else if (dev === "PH_01") val = `pH ${m.ph ?? "—"}`;
-    else if (dev === "TANK_01") val = `Bồn ${m.level ?? m.tank_level ?? "—"}%`;
-    else if (dev === "SUN_01") val = `Sáng ${m.lux ?? "—"} lux`;
-    return `<span class="evidence-pill">${escapeHtml(val)}</span>`;
-  }).join("");
+  target.className = "";
 
-  const agentTraces = (result.real_agent_trace || []).map(trace => {
-    const name = agentNameVi(trace.agent_id);
-    return `
-      <div class="agent-trace-card">
-        <div class="agent-trace-head">
-          <b>${escapeHtml(name)}</b>
-          <span class="tag">${escapeHtml(trace.provider)}/${escapeHtml(trace.model)}</span>
-        </div>
-        <p class="agent-trace-text">${escapeHtml(trace.analysis)}</p>
+  const narrative = result.narrative_summary || result.summary || "Hệ thống đã hoàn thành phân tích đàm phán.";
+  const dialogues = result.agent_dialogue || [];
+  const dialogueHtml = dialogues.map(item => `
+    <div class="trace">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+        <b style="font-size: 14px;">${escapeHtml(item.speaker || item.agent)}</b>
+        <span class="tag">${escapeHtml(item.llm_model || item.llm_slot || "LLM")}</span>
       </div>
-    `;
-  }).join("");
-
-  const summaryText = result.ai_summary || result.ai_executive_summary || result.summary || "Đã phân tích xong dữ liệu cảm biến.";
+      <p style="margin: 6px 0 0; font-size: 14px; line-height: 1.5;">${escapeHtml(item.message)}</p>
+    </div>
+  `).join("");
 
   target.innerHTML = `
-    <div class="run-header">
-      <div class="run-title-group">
-        <span class="tag ok">${escapeHtml(result.status || "COMPLETED")}</span>
-        <strong class="action-name">${escapeHtml(actionTypeLabel)}</strong>
-      </div>
-      <span class="tag warn">${escapeHtml(statusLabel)}</span>
+    <div class="dialogue-narrative-card">
+      <h3>Báo cáo diễn giải cuộc trò chuyện AI</h3>
+      <p>${escapeHtml(narrative)}</p>
     </div>
-    
-    <div class="user-request-box">
-      <small>Yêu cầu từ người dùng:</small>
-      <p>"${escapeHtml(result.scenario_text || "-")}"</p>
+    <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+      <span class="tag tag-success">Mã Lệnh: ${escapeHtml(result.action_type || "IRRIGATION_PLAN")}</span>
+      <span class="tag">Trạng thái: ${escapeHtml(result.verification_status || "VERIFIED")}</span>
     </div>
-
-    <div class="ai-summary-box">
-      <div class="ai-summary-head">
-        <span class="ai-icon">✨</span>
-        <b>Phân tích & Trả lời từ AI:</b>
-      </div>
-      <p>${escapeHtml(summaryText)}</p>
-    </div>
-
-    <div class="evidence-strip">
-      <small>Dữ liệu cảm biến thực tế (${escapeHtml(result.telemetry_source?.source_type || "MQTT")}):</small>
-      <div class="evidence-pills">${evidencePills}</div>
-    </div>
-
-    <div class="agent-traces-section">
-      <small>Chi tiết phân tích từ các Tác tử AI:</small>
-      ${agentTraces}
-    </div>
+    <div class="eyebrow" style="margin-bottom: 8px;">Nhật ký trao đổi đàm phán giữa các Agents</div>
+    ${dialogueHtml || '<p class="subtitle-text">Chưa có nhật ký trao đổi.</p>'}
   `;
 }
 
 async function runCoordination() {
-  const selected = [...document.querySelectorAll("#agent-selector input:checked")].map(input => input.value);
-  if (selected.length < 3) { setRunStatus("Select at least three READY agents.", "bad"); return; }
-  const button = document.querySelector("#run"); button.disabled = true; setRunStatus("Creating an MQTT snapshot and calling live providers...", "warn");
+  const button = document.querySelector("#run");
+  if (button) button.disabled = true;
+  setRunStatus("Đang đọc dữ liệu cảm biến và khởi chạy đàm phán 4 LLM Agents...", "warn");
   try {
-    const result = await api("/api/coordination-runs", { method: "POST", body: JSON.stringify({ scenario_text: document.querySelector("#scenario").value.trim(), selected_agents: selected, target_zone: "FARM_ZONE_1" }) });
-    renderRun(result); setRunStatus("Complete. The action is waiting for operator approval.", "ok"); await loadActions();
-  } catch (error) { setRunStatus(`Unable to run: ${JSON.stringify(error)}`, "bad"); }
-  finally { button.disabled = false; }
+    const scenarioText = (document.querySelector("#scenario")?.value || "").trim() || "Hãy kiểm tra và lập kế hoạch tưới hôm nay";
+    const result = await api("/api/dialogue/summary", {
+      method: "POST",
+      body: JSON.stringify({ request: scenarioText, manager_name: "Quản lý Trang trại A" })
+    });
+    renderRun(result);
+    setRunStatus("Hoàn thành đàm phán 4 AI Agents. Lệnh đã tạo chờ duyệt.", "ok");
+    if (typeof loadActions === "function") await loadActions();
+  } catch (error) {
+    setRunStatus(`Lỗi kết nối API: ${JSON.stringify(error)}`, "bad");
+  } finally {
+    if (button) button.disabled = false;
+  }
 }
 
 async function loadActions() {
@@ -464,15 +432,51 @@ async function clearActionsHistory() {
 function activateTab(name) {
   document.querySelectorAll(".tab").forEach(item => item.classList.toggle("active", item.dataset.tab === name));
   document.querySelectorAll("main > .panel").forEach(panel => panel.classList.toggle("active", panel.id === name));
-  if (name === "dashboard") renderFarmMap();
+  if (name === "dashboard" && typeof renderFarmMap === "function") renderFarmMap();
 }
-document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => activateTab(tab.dataset.tab)));
-document.querySelector("#run").addEventListener("click", runCoordination);
-document.querySelector("#refresh").addEventListener("click", () => { if (typeof refreshAll === "function") refreshAll(); });
-document.querySelector("#refresh-actions").addEventListener("click", loadActions);
-const clearBtn = document.querySelector("#clear-actions");
-if (clearBtn) clearBtn.addEventListener("click", clearActionsHistory);
-document.querySelectorAll(".prompt-btn").forEach(button => button.addEventListener("click", () => { document.querySelector("#scenario").value = button.dataset.prompt; }));
+
+const runBtn = document.querySelector("#run");
+if (runBtn) runBtn.addEventListener("click", runCoordination);
+
+const refreshBtn = document.querySelector("#refresh");
+if (refreshBtn) refreshBtn.addEventListener("click", () => { if (typeof refreshAll === "function") refreshAll(); });
+
+const refreshActionsBtn = document.querySelector("#refresh-actions");
+if (refreshActionsBtn) refreshActionsBtn.addEventListener("click", loadActions);
+
+document.querySelectorAll(".prompt-btn").forEach(button => button.addEventListener("click", () => {
+  const scenario = document.querySelector("#scenario");
+  if (scenario) scenario.value = button.dataset.prompt;
+}));
+
+async function fetchLatestDialogueSummary() {
+  try {
+    const summaryData = await api("/api/dialogue/summary", { method: "GET" });
+    if (summaryData && summaryData.narrative_summary) {
+      const executiveMsg = document.querySelector("#executive-message");
+      if (executiveMsg) {
+        executiveMsg.className = "executive-message";
+        executiveMsg.innerHTML = `<b>Tóm tắt chỉ đạo đàm phán AI gần nhất:</b> ${escapeHtml(summaryData.narrative_summary)}`;
+      }
+      const runResult = document.querySelector("#run-result");
+      if (runResult && (runResult.classList.contains("result-empty") || runResult.innerHTML.includes("Hệ thống đang chờ"))) {
+        renderRun(summaryData);
+      }
+    }
+  } catch (err) {
+    console.warn("Lỗi gọi GET /api/dialogue/summary:", err);
+  }
+}
+
+const fetchDialogueSummaryBtn = document.querySelector("#fetch-dialogue-summary-btn");
+if (fetchDialogueSummaryBtn) {
+  fetchDialogueSummaryBtn.addEventListener("click", async () => {
+    setRunStatus("Đang gọi GET /api/dialogue/summary để nạp tóm tắt...", "warn");
+    await fetchLatestDialogueSummary();
+    setRunStatus("Đã cập nhật tóm tắt đàm phán từ GET API.", "ok");
+  });
+}
+
 document.querySelectorAll(".demo").forEach(button => button.addEventListener("click", async () => { await api("/api/demo/seed", { method: "POST", body: JSON.stringify({ scenario: button.dataset.scenario }) }); await loadTelemetry(); window.alert(`Demo scenario loaded: ${button.textContent}. Demo data cannot trigger a live MQTT AI decision.`); }));
 
 function connectRealtime() {
@@ -482,7 +486,8 @@ function connectRealtime() {
   socket.onclose = () => setTimeout(connectRealtime, 2000);
 }
 
-Promise.all([loadHealth(), loadTelemetry(), loadAgents(), loadActions()]).catch(error => setRunStatus(`Unable to connect to the API: ${JSON.stringify(error)}`, "bad"));
+Promise.all([loadHealth(), loadTelemetry(), loadAgents(), loadActions(), fetchLatestDialogueSummary()]).catch(error => setRunStatus(`Unable to connect to the API: ${JSON.stringify(error)}`, "bad"));
+
 
 let countdown = 10;
 async function refreshAll() {

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="vi">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>FarmOps AI | Xu hướng Cảm biến IoT</title>
+  <link rel="stylesheet" href="./dashboard.css">
+</head>
+
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-badge">2</div>
+        <div>
+          <h1 class="brand-title">FarmOps AI</h1>
+        </div>
+      </div>
+      <div class="header-status">
+        <div id="health" class="tag tag-success">Hệ thống sẵn sàng</div>
+      </div>
+    </header>
+
+    <nav class="tabs nav-bar" aria-label="Điều hướng chính">
+      <a href="index.html" class="tab" data-tab="dashboard">Tổng quan</a>
+      <a href="sensors.html" class="tab active" data-tab="sensors">Cảm biến IoT</a>
+      <a href="workflow.html" class="tab" data-tab="workflow">Nghiệp vụ AI</a>
+      <a href="setting.html" class="tab" data-tab="setting">Cấu hình AI</a>
+    </nav>
+
+    <section id="sensors" class="panel active">
+      <div class="stack">
+        <!-- Sensor Trends Section -->
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Dữ liệu thời gian thực</div>
+              <h2>Biểu đồ xu hướng 6 cảm biến</h2>
+              <p class="subtitle-text">Lịch sử đo 30 phút gần nhất qua MQTT và MongoDB Atlas Pipeline.</p>
+            </div>
+            <div class="btn-group-right">
+              <button id="refresh" class="btn-secondary">Làm mới dữ liệu</button>
+            </div>
+          </div>
+
+          <div id="sensor-trends" class="sensor-trends" aria-label="Xu hướng lịch sử cảm biến"></div>
+        </section>
+
+        <!-- Devices Detail Section -->
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Trạng thái kỹ thuật</div>
+              <h2>Chi tiết 6 thiết bị cảm biến trường</h2>
+            </div>
+          </div>
+          <div id="devices" class="devices"></div>
+        </section>
+
+        <!-- Annotations Section -->
+        <section class="card">
+          <div class="section-head">
+            <div>
+              <div class="eyebrow">Quy chuẩn thông số</div>
+              <h2>Chú thích dải đo an toàn</h2>
+            </div>
+          </div>
+          <div class="annotation-grid">
+            <div class="annotation-item"><strong>SOIL_01:</strong> Độ ẩm đất (%) và nhiệt độ đất (°C) vùng rễ cây.</div>
+            <div class="annotation-item"><strong>WEATHER_01:</strong> Nhiệt độ không khí (°C) và độ ẩm môi trường (%).</div>
+            <div class="annotation-item"><strong>PUMP_01:</strong> Lưu lượng bơm (L/min) và công suất điện năng (W).</div>
+            <div class="annotation-item"><strong>PH_01:</strong> Độ pH nguồn nước tưới (dải an toàn từ 5.5 đến 7.5).</div>
+            <div class="annotation-item"><strong>TANK_01:</strong> Mức nước dự trữ bồn chứa (%) (ngưỡng an toàn &gt;= 25%).</div>
+            <div class="annotation-item"><strong>SUN_01:</strong> Bức xạ cường độ ánh sáng mặt trời (lux).</div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav">
+      <a href="index.html" class="mobile-nav-item">Tổng quan</a>
+      <a href="sensors.html" class="mobile-nav-item active">Cảm biến</a>
+      <a href="workflow.html" class="mobile-nav-item">Nghiệp vụ</a>
+      <a href="setting.html" class="mobile-nav-item">Cấu hình</a>
+    </nav>
+  </main>
+  <script src="./app.js"></script>
+</body>
+
+</html>

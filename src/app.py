@@ -149,6 +149,31 @@ def coordinate(request: ManagerRequest) -> dict:
     return coordinator.handle(request.request, request.manager_name)
 
 
+@app.post("/api/dialogue/summary")
+def dialogue_summary(request: ManagerRequest) -> dict:
+    """API mới: Trả về kết quả cuộc đối thoại trò chuyện AI ngắn gọn 2-3 dòng cho giao diện Frontend."""
+    result = coordinator.handle(request.request, request.manager_name)
+    narrative = coordinator.summarize_dialogue(result)
+    action_info = result.get("agent_trace", [{}, {}, {}, {}])[3]
+    return {
+        "status": "success",
+        "manager_request": request.request,
+        "manager_name": request.manager_name,
+        "narrative_summary": narrative,
+        "action_type": action_info.get("created", {}).get("action_type"),
+        "verification_status": action_info.get("verification", {}).get("status"),
+        "agent_dialogue": result.get("agent_dialogue", [])
+    }
+
+
+@app.get("/api/dialogue/summary")
+def dialogue_summary_get() -> dict:
+    """GET Endpoint tiện lợi cho việc xem trực tiếp trên trình duyệt."""
+    req = ManagerRequest(request="Hãy kiểm tra và lập kế hoạch tưới hôm nay", manager_name="Quản lý Trang trại A")
+    return dialogue_summary(req)
+
+
+
 @app.get("/api/actions/{action_id}")
 def get_action(action_id: str) -> dict:
     action = store.get_action(action_id)
