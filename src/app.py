@@ -35,8 +35,20 @@ def health() -> dict:
 
 @app.post("/api/telemetry")
 def demo_ingest(message: TelemetryMessage) -> dict:
-    """Demo endpoint; contest messages normally enter through MQTT."""
+    """Demo endpoint; contest messages normally enter through MQTT.
+    Data posted here is also passed through TV1's pipeline and MongoDB.
+    """
+    # 1. Keep SQLite path
     store.ingest(message)
+    
+    # 2. Run TV1 data processing pipeline -> MongoDB
+    try:
+        processed = mqtt_ingestion.processor.process(message.model_dump())
+        if mongo_store is not None:
+            mongo_store.ingest(processed)
+    except ValueError as err:
+        logging.warning("API ingestion processing failed: %s", err)
+
     return {"accepted": True, "device_code": message.device_code}
 
 
