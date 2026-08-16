@@ -362,26 +362,27 @@ def demo_live():
             show_json("1. INPUT GỐC (Raw Payload):", payload, "YELLOW")
             
             # Normalize
-            normalized = MQTTIngestionClient._normalize(payload)
+            normalized_list = MQTTIngestionClient._normalize(payload)
             
-            # Process
-            processed = processor.process(normalized.model_dump())
-            
-            # Khúc này không gọi store.ingest để tránh bị ghi đúp (vì app.py đang chạy và ghi rồi)
-            # Chúng ta chỉ trực quan hoá ra màn hình thôi
-            
-            show_json("2. OUTPUT SAU KHI ĐI QUA PIPELINE (Cho AI Agent):", processed, "GREEN")
-            
-            if not processed["quality"]["valid"]:
-                print(f"  {c('⚠️ DỮ LIỆU CÓ LỖI HOẶC BỊ CLAMP (Chặn rác thành công!)', 'RED')}")
-            elif processed["quality"]["freshness"] != "FRESH":
-                print(f"  {c('⏳ DỮ LIỆU CŨ (STALE)', 'YELLOW')}")
-            elif processed["quality"]["anomalies"]:
-                print(f"  {c('🚨 PHÁT HIỆN BẤT THƯỜNG (ANOMALY)', 'RED')}")
-            else:
-                print(f"  {c('✅ DỮ LIỆU ĐẸP, HOÀN HẢO!', 'CYAN')}")
+            for normalized in normalized_list:
+                # Process
+                processed = processor.process(normalized.model_dump())
                 
-            print("  " + "─"*60)
+                # Khúc này không gọi store.ingest để tránh bị ghi đúp (vì app.py đang chạy và ghi rồi)
+                # Chúng ta chỉ trực quan hoá ra màn hình thôi
+                
+                show_json(f"2. OUTPUT SAU KHI ĐI QUA PIPELINE ({normalized.device_code}):", processed, "GREEN")
+                
+                if not processed["quality"]["valid"]:
+                    print(f"  {c('⚠️ DỮ LIỆU CÓ LỖI HOẶC BỊ CLAMP (Chặn rác thành công!)', 'RED')}")
+                elif processed["quality"]["freshness"] != "FRESH":
+                    print(f"  {c('⏳ DỮ LIỆU CŨ (STALE)', 'YELLOW')}")
+                elif processed["quality"]["anomalies"]:
+                    print(f"  {c('🚨 PHÁT HIỆN BẤT THƯỜNG (ANOMALY)', 'RED')}")
+                else:
+                    print(f"  {c('✅ DỮ LIỆU ĐẸP, HOÀN HẢO!', 'CYAN')}")
+                    
+                print("  " + "─"*60)
             
         except Exception as e:
             print(f"  {c('❌ Lỗi xử lý tin nhắn:', 'RED')} {e}")

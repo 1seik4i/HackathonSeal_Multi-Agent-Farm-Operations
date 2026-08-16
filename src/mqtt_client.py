@@ -36,7 +36,23 @@ class MQTTIngestionClient:
             self.client.tls_set()
 
     @staticmethod
-    def _normalize(payload: dict) -> TelemetryMessage:
+    def _normalize(payload: dict) -> list[TelemetryMessage]:
+        if "devices" in payload and isinstance(payload["devices"], list):
+            base_timestamp = payload.get("timestamp")
+            messages = []
+            for device in payload["devices"]:
+                flat_payload = {
+                    "device_code": device.get("deviceCode", device.get("device_id", "")),
+                    "timestamp": device.get("timestamp", base_timestamp),
+                    "metrics": device.get("metrics", {})
+                }
+                messages.append(MQTTIngestionClient._normalize_single(flat_payload))
+            return messages
+        else:
+            return [MQTTIngestionClient._normalize_single(payload)]
+
+    @staticmethod
+    def _normalize_single(payload: dict) -> TelemetryMessage:
         metrics = payload.get("metrics")
         if metrics is None:
             metrics = {key: value for key, value in payload.items() if key not in {"device_code", "device_id", "timestamp", "device", "ts"}}
@@ -73,21 +89,22 @@ class MQTTIngestionClient:
     def _on_message(self, client, userdata, message) -> None:
         try:
             payload = json.loads(message.payload.decode("utf-8"))
-            normalized = self._normalize(payload)
+            normalized_list = self._normalize(payload)
 
-            # 1. Keep SQLite path for TV2/TV3 compatibility
-            self.store.ingest(normalized)
-
-            # 2. Run data processing pipeline → MongoDB
-            try:
-                processed = self.processor.process(normalized.model_dump())
-                if self.mongo_store is not None:
-                    self.mongo_store.ingest(processed)
-                    log.info("telemetry processed & stored in MongoDB for %s", normalized.device_code)
-            except ValueError as proc_err:
-                log.warning("data processing failed for %s: %s", normalized.device_code, proc_err)
-
-            log.info("telemetry accepted from %s", normalized.device_code)
+            for normalized in normalized_list:
+                # 1. Keep SQLite path for TV2/TV3 compatibility
+                self.store.ingest(normalized)
+    
+                # 2. Run data processing pipeline → MongoDB
+                try:
+                    processed = self.processor.process(normalized.model_dump())
+                    if self.mongo_store is not None:
+                        self.mongo_store.ingest(processed)
+                        log.info("telemetry processed & stored in MongoDB for %s", normalized.device_code)
+                except ValueError as proc_err:
+                    log.warning("data processing failed for %s: %s", normalized.device_code, proc_err)
+    
+                log.info("telemetry accepted from %s", normalized.device_code)
         except Exception as error:
             log.warning("telemetry rejected: %s", error)
 
