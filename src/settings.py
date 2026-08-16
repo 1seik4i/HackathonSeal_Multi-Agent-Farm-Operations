@@ -19,6 +19,8 @@ class Settings:
     api_port: int = int(os.getenv("API_PORT", "8000"))
     stale_after_seconds: int = int(os.getenv("STALE_AFTER_SECONDS", "300"))
     database_path: str = os.getenv("DATABASE_PATH", "farmops.db")
+    mongodb_uri: str = os.getenv("MONGODB_URI", "")
+    mongodb_db_name: str = os.getenv("MONGODB_DB_NAME", "farmops")
 
 
 settings = Settings()

@@ -5,6 +5,7 @@ import logging
 
 import paho.mqtt.client as mqtt
 
+from src.data_processor import IoTDataProcessor
 from src.models import TelemetryMessage
 from src.settings import settings
 from src.storage import FarmStore
@@ -16,8 +17,10 @@ log = logging.getLogger(__name__)
 class MQTTIngestionClient:
     """Subscribes to the contest topic and stores validated telemetry only."""
 
-    def __init__(self, store: FarmStore) -> None:
+    def __init__(self, store: FarmStore, mongo_store=None) -> None:
         self.store = store
+        self.mongo_store = mongo_store
+        self.processor = IoTDataProcessor(stale_after_seconds=settings.stale_after_seconds)
         self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="farmops-team-2")
         self.client.on_connect = self._on_connect
         self.client.on_message = self._on_message
@@ -31,14 +34,25 @@ class MQTTIngestionClient:
     def _normalize(payload: dict) -> TelemetryMessage:
         metrics = payload.get("metrics")
         if metrics is None:
-            metrics = {key: value for key, value in payload.items() if key not in {"device_code", "timestamp", "device", "ts"}}
+            metrics = {key: value for key, value in payload.items() if key not in {"device_code", "device_id", "timestamp", "device", "ts"}}
+        
+        device_code = payload.get("device_id", payload.get("device_code", payload.get("device")))
         normalized = {
-            "device_code": payload.get("device_code", payload.get("device")),
+            "device_code": device_code,
             "metrics": metrics,
         }
+        
         timestamp = payload.get("timestamp", payload.get("ts"))
         if timestamp is not None:
+            if isinstance(timestamp, str):
+                try:
+                    from datetime import datetime
+                    ts_str = timestamp.replace("Z", "+00:00")
+                    timestamp = datetime.fromisoformat(ts_str).timestamp()
+                except Exception as error:
+                    log.warning("Failed to parse ISO-8601 timestamp '%s': %s", timestamp, error)
             normalized["timestamp"] = timestamp
+            
         return TelemetryMessage.model_validate(normalized)
 
     def _on_connect(self, client, userdata, flags, reason_code, properties) -> None:
@@ -54,8 +68,21 @@ class MQTTIngestionClient:
     def _on_message(self, client, userdata, message) -> None:
         try:
             payload = json.loads(message.payload.decode("utf-8"))
-            self.store.ingest(self._normalize(payload))
-            log.info("telemetry accepted from %s", payload.get("device_code", payload.get("device")))
+            normalized = self._normalize(payload)
+
+            # 1. Keep SQLite path for TV2/TV3 compatibility
+            self.store.ingest(normalized)
+
+            # 2. Run data processing pipeline → MongoDB
+            try:
+                processed = self.processor.process(normalized.model_dump())
+                if self.mongo_store is not None:
+                    self.mongo_store.ingest(processed)
+                    log.info("telemetry processed & stored in MongoDB for %s", normalized.device_code)
+            except ValueError as proc_err:
+                log.warning("data processing failed for %s: %s", normalized.device_code, proc_err)
+
+            log.info("telemetry accepted from %s", normalized.device_code)
         except Exception as error:
             log.warning("telemetry rejected: %s", error)
 
