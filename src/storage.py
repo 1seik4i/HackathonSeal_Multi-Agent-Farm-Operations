@@ -125,6 +125,10 @@ class FarmStore:
             rows = conn.execute("SELECT * FROM actions ORDER BY created_at DESC LIMIT ?", (limit_val,)).fetchall()
         return [ActionRecord(id=row["id"], action_type=row["action_type"], status=row["status"], payload=json.loads(row["payload_json"]), created_at=row["created_at"], updated_at=row["updated_at"]) for row in rows]
 
+    def clear_actions(self) -> None:
+        with self._connect() as conn:
+            conn.execute("DELETE FROM actions")
+
     def update_action(self, action_id: str, status: str, payload_updates: dict[str, Any] | None = None) -> ActionRecord | None:
         action = self.get_action(action_id)
         if action is None:

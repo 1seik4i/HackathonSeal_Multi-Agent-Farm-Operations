@@ -433,7 +433,8 @@ async function loadActions() {
     `<article class="action action-system"><div class="section-head"><div class="action-title"><span class="action-icon">TK</span><b>Nhiệm vụ Kiểm tra Thiết bị</b></div><span class="tag ${offline.length ? "bad" : "ok"}">${offline.length ? "CẦN HÀNH ĐỘNG" : "KHÔNG YÊU CẦU"}</span></div><p>${offline.length ? `Cần kiểm tra ${offline.map(displayDevice).join(", ")} vì không nhận được tín hiệu trong 60 giây qua.` : "Không yêu cầu kiểm tra thủ công. Mọi cảm biến đều hoạt động tốt trong 60 giây qua."}</p><p class="evidence">Bằng chứng: ${reporting.length}/6 cảm biến phản hồi</p></article>`,
     `<article class="action action-system"><div class="section-head"><div class="action-title"><span class="action-icon">AP</span><b>Hàng đợi Phê duyệt</b></div><span class="tag ${pending.length ? "warn" : "ok"}">${pending.length ? `${pending.length} ĐANG CHỜ` : "TRỐNG"}</span></div><p>${pending.length ? "Có quyết định vận hành từ AI đang chờ quản lý phê duyệt." : "Không có công việc nào chờ duyệt. Quyết định của AI sẽ xuất hiện tại đây kèm theo bằng chứng."}</p><p class="evidence">Chốt chặn phê duyệt của con người · AI không thể tự động phê duyệt</p></article>`,
   ];
-  const actionCards = actions.map(action => `<article class="action"><div class="section-head"><b>${escapeHtml(action.action_type.replaceAll("_", " "))}</b><span class="tag">${escapeHtml(action.status.replaceAll("_", " "))}</span></div><p class="evidence">${escapeHtml(action.id)} · ${formatTime(action.created_at)}</p><p>${escapeHtml(action.payload.reason || action.payload.schedule?.target_zone || "Xem chi tiết bằng chứng trong hồ sơ công việc.")}</p>${action.status === "PENDING_APPROVAL" ? `<div class="row"><button data-approval="APPROVE" data-id="${action.id}">Đồng ý duyệt</button><button class="danger" data-approval="REJECT" data-id="${action.id}">Từ chối & Điều chỉnh</button></div>` : ""}${["APPROVED", "EXECUTING"].includes(action.status) ? `<button class="secondary" data-verify="${action.id}">Xác minh dữ liệu phản hồi</button>` : ""}</article>`);
+  const displayableActions = actions.filter(action => !(action.action_type === "FIELD_TASK" && action.status === "CREATED"));
+  const actionCards = displayableActions.map(action => `<article class="action"><div class="section-head"><b>${escapeHtml(action.action_type.replaceAll("_", " "))}</b><span class="tag">${escapeHtml(action.status.replaceAll("_", " "))}</span></div><p class="evidence">${escapeHtml(action.id)} · ${formatTime(action.created_at)}</p><p>${escapeHtml(action.payload.reason || action.payload.schedule?.target_zone || "Xem chi tiết bằng chứng trong hồ sơ công việc.")}</p>${action.status === "PENDING_APPROVAL" ? `<div class="row"><button data-approval="APPROVE" data-id="${action.id}">Đồng ý duyệt</button><button class="danger" data-approval="REJECT" data-id="${action.id}">Từ chối & Điều chỉnh</button></div>` : ""}${["APPROVED", "EXECUTING"].includes(action.status) ? `<button class="secondary" data-verify="${action.id}">Xác minh dữ liệu phản hồi</button>` : ""}</article>`);
   container.innerHTML = [...systemCards, ...actionCards].join("");
   document.querySelectorAll("[data-approval]").forEach(button => button.addEventListener("click", approveAction));
   document.querySelectorAll("[data-verify]").forEach(button => button.addEventListener("click", verifyAction));
@@ -450,6 +451,16 @@ async function verifyAction(event) {
   catch (error) { window.alert(`Unable to verify the action: ${JSON.stringify(error)}`); }
 }
 
+async function clearActionsHistory() {
+  if (!window.confirm("Bạn có chắc chắn muốn xóa toàn bộ lịch sử công việc không?")) return;
+  try {
+    await api("/api/actions", { method: "DELETE" });
+    await loadActions();
+  } catch (error) {
+    window.alert(`Không thể xóa danh sách tác vụ: ${JSON.stringify(error)}`);
+  }
+}
+
 function activateTab(name) {
   document.querySelectorAll(".tab").forEach(item => item.classList.toggle("active", item.dataset.tab === name));
   document.querySelectorAll("main > .panel").forEach(panel => panel.classList.toggle("active", panel.id === name));
@@ -459,6 +470,8 @@ document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", (
 document.querySelector("#run").addEventListener("click", runCoordination);
 document.querySelector("#refresh").addEventListener("click", () => { if (typeof refreshAll === "function") refreshAll(); });
 document.querySelector("#refresh-actions").addEventListener("click", loadActions);
+const clearBtn = document.querySelector("#clear-actions");
+if (clearBtn) clearBtn.addEventListener("click", clearActionsHistory);
 document.querySelectorAll(".prompt-btn").forEach(button => button.addEventListener("click", () => { document.querySelector("#scenario").value = button.dataset.prompt; }));
 document.querySelectorAll(".demo").forEach(button => button.addEventListener("click", async () => { await api("/api/demo/seed", { method: "POST", body: JSON.stringify({ scenario: button.dataset.scenario }) }); await loadTelemetry(); window.alert(`Demo scenario loaded: ${button.textContent}. Demo data cannot trigger a live MQTT AI decision.`); }));
 

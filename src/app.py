@@ -287,6 +287,12 @@ def list_actions(limit: int = Query(default=30, ge=1, le=100)) -> list[dict]:
     return [action.model_dump() for action in store.list_actions(limit)]
 
 
+@app.delete("/api/actions")
+def clear_actions() -> dict:
+    store.clear_actions()
+    return {"status": "SUCCESS", "message": "Cleared all action history."}
+
+
 @app.patch("/api/actions/{action_id}/approval")
 def approve_action(action_id: str, request: ApprovalRequest) -> dict:
     action = store.get_action(action_id)
