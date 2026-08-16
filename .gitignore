@@ -1,4 +1,5 @@
 .env
+api_keys.env
 farmops.db
 tests/_test_farmops.db
 __pycache__/

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from dotenv import load_dotenv
 
 load_dotenv()
+load_dotenv("api_keys.env")
 
 
 @dataclass(frozen=True)
