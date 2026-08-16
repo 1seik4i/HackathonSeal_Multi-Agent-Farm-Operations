@@ -96,7 +96,8 @@ def demo_normal():
     print(f"  • ISO-8601 string → float timestamp")
     print(f"  • Flat payload → metrics dict")
     
-    normalized = MQTTIngestionClient._normalize(raw_mqtt)
+    normalized_list = MQTTIngestionClient._normalize(raw_mqtt)
+    normalized = normalized_list[0]
     normalized_dict = normalized.model_dump()
     show_json("📤 OUTPUT (TelemetryMessage chuẩn):", normalized_dict, "GREEN")
     
@@ -340,17 +341,17 @@ def demo_live():
 
     processor = IoTDataProcessor(stale_after_seconds=settings.stale_after_seconds)
     
-    def on_connect(c, userdata, flags, rc, properties):
+    def on_connect(client_obj, userdata, flags, rc, properties):
         if rc.is_failure:
             print(f"  {c('❌ Kết nối MQTT thất bại:', 'RED')} {rc}")
         else:
             print(f"  {c('✅ Kết nối MQTT THÀNH CÔNG!', 'GREEN')}")
-            c.subscribe(settings.mqtt_topic)
+            client_obj.subscribe(settings.mqtt_topic)
             print(f"  {c('📡 Đang lắng nghe topic:', 'CYAN')} {settings.mqtt_topic}")
             print(f"  {c('(Hãy chờ thiết bị thật bắn dữ liệu lên...)', 'DIM')}")
             print("  " + "─"*60)
 
-    def on_message(c, userdata, msg):
+    def on_message(client_obj, userdata, msg):
         try:
             payload_str = msg.payload.decode()
             payload = json.loads(payload_str)
