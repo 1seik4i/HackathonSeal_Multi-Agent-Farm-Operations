@@ -415,18 +415,25 @@ async function loadSnapshot() {
 }
 
 function renderAgentSelector() {
-  document.querySelector("#agent-selector").innerHTML = agentConfigs.map(agent => `
-    <label class="agent">
-      <span class="agent-title">
-        <input type="checkbox" value="${agent.agent_id}" ${agent.enabled && agent.connection_status === "READY" ? "checked" : ""}>
-        <span class="agent-name">${escapeHtml(agent.display_name)}</span>
-      </span>
-      <span class="agent-role">${escapeHtml(agent.role)}</span>
-      <span class="agent-meta">
-        <span class="${agent.connection_status === "READY" ? "ok" : "warn"}">${agent.connection_status === 'READY' ? 'SẴN SÀNG' : statusVi(agent.connection_status)}</span> · ${escapeHtml(agent.provider)}/${escapeHtml(agent.model)}
-      </span>
-    </label>
-  `).join("");
+  const container = document.querySelector("#agent-selector");
+  if (!container) return;
+  container.innerHTML = agentConfigs.map(agent => {
+    const isReady = agent.connection_status === "READY";
+    return `
+      <label class="agent-select-card ${agent.enabled && isReady ? "selected" : ""}">
+        <div class="agent-select-head">
+          <input type="checkbox" value="${agent.agent_id}" ${agent.enabled && isReady ? "checked" : ""}>
+          <span class="agent-select-name">${escapeHtml(agent.display_name)}</span>
+        </div>
+        <span class="agent-select-role">${escapeHtml(agent.role)}</span>
+        <div class="agent-select-meta">
+          <span class="${isReady ? "tag tag-success" : "tag tag-warning"}">${isReady ? "SẴN SÀNG" : statusVi(agent.connection_status)}</span>
+          <small style="color: var(--text-muted); font-weight: 600;">${escapeHtml(agent.provider)} / ${escapeHtml(agent.model)}</small>
+        </div>
+      </label>
+    `;
+  }).join("");
+
   const updateSummary = () => {
     const selected = [...document.querySelectorAll("#agent-selector input:checked")].map(input => agentConfigs.find(agent => agent.agent_id === input.value)?.display_name).filter(Boolean);
     const target = document.querySelector("#ai-selection-summary");
@@ -437,7 +444,67 @@ function renderAgentSelector() {
 }
 
 function renderAgentConfigs() {
-  document.querySelector("#agent-configs").innerHTML = agentConfigs.map(agent => `<article class="agent" data-agent="${agent.agent_id}"><div class="section-head"><div class="agent-header-info"><b class="agent-name">${escapeHtml(agent.display_name)}</b><p class="muted">${escapeHtml(agent.role)}</p></div><span class="tag ${agent.connection_status === "READY" ? "ok" : "warn"}">${agent.connection_status}</span></div><div class="two"><label>Provider<select class="provider"><option value="openai" ${agent.provider === "openai" ? "selected" : ""}>ChatGPT / OpenAI</option><option value="gemini" ${agent.provider === "gemini" ? "selected" : ""}>Google Gemini</option><option value="anthropic" ${agent.provider === "anthropic" ? "selected" : ""}>Claude / Anthropic</option><option value="deepseek" ${agent.provider === "deepseek" ? "selected" : ""}>DeepSeek</option></select></label><label>Model<input class="model" value="${escapeHtml(agent.model)}" maxlength="120"></label></div><label>API key<input class="api-key" type="password" autocomplete="new-password" placeholder="Enter a new or replacement API key"></label><label><input class="enabled" type="checkbox" ${agent.enabled ? "checked" : ""}> Enable this provider</label><div class="row"><button class="save-agent secondary">Save settings</button><button class="test-agent">Test connection</button></div><span class="agent-message evidence">${agent.has_api_key ? (agent.has_custom_key ? "Đã nhập API key tùy chỉnh (ưu tiên dùng)" : "Tự động dùng API key mặc định trong .env") : "Chưa có API key"}${agent.last_error ? ` · ${escapeHtml(agent.last_error)}` : ""}</span></article>`).join("");
+  const container = document.querySelector("#agent-configs");
+  if (!container) return;
+  container.innerHTML = agentConfigs.map(agent => {
+    const isReady = agent.connection_status === "READY";
+    const statusTag = isReady ? `<span class="tag tag-success">SẴN SÀNG</span>` : `<span class="tag tag-warning">${escapeHtml(statusVi(agent.connection_status))}</span>`;
+    
+    const keyInfo = agent.has_api_key
+      ? (agent.has_custom_key ? "Đã nhập API key tùy chỉnh (ưu tiên dùng)" : "Tự động dùng API key mặc định trong .env")
+      : "Chưa có API key";
+    const errorInfo = agent.last_error ? ` · Lỗi: ${escapeHtml(agent.last_error)}` : "";
+
+    return `
+      <article class="agent-config-card" data-agent="${agent.agent_id}">
+        <div class="agent-card-head">
+          <div>
+            <b class="agent-name">${escapeHtml(agent.display_name)}</b>
+            <p class="subtitle-text" style="font-size: 13px; margin: 2px 0 0;">${escapeHtml(agent.role)}</p>
+          </div>
+          ${statusTag}
+        </div>
+
+        <div class="form-grid-two" style="margin-top: 10px;">
+          <div>
+            <label class="form-label">Nhà cung cấp AI (Provider)</label>
+            <select class="provider form-textarea" style="padding: 10px 12px; height: 44px;">
+              <option value="openai" ${agent.provider === "openai" ? "selected" : ""}>ChatGPT / OpenAI</option>
+              <option value="gemini" ${agent.provider === "gemini" ? "selected" : ""}>Google Gemini</option>
+              <option value="anthropic" ${agent.provider === "anthropic" ? "selected" : ""}>Claude / Anthropic</option>
+              <option value="deepseek" ${agent.provider === "deepseek" ? "selected" : ""}>DeepSeek</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Mô hình LLM (Model)</label>
+            <input class="model form-textarea" style="padding: 10px 12px; height: 44px;" value="${escapeHtml(agent.model)}" maxlength="120">
+          </div>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <label class="form-label">Khóa API key tùy chỉnh</label>
+          <input class="api-key form-textarea" type="password" autocomplete="new-password" placeholder="Nhập API key tùy chỉnh (để trống nếu tự động dùng trong .env)">
+        </div>
+
+        <div style="margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+          <label style="margin: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; color: var(--text-main);">
+            <input class="enabled" type="checkbox" ${agent.enabled ? "checked" : ""} style="width: 18px; height: 18px; cursor: pointer;">
+            Kích hoạt Tác tử AI này
+          </label>
+          
+          <div class="btn-group-right">
+            <button class="btn-primary save-agent" style="min-height: 42px; padding: 8px 18px;">Lưu cấu hình</button>
+            <button class="btn-secondary test-agent" style="min-height: 42px; padding: 8px 18px;">Kiểm tra kết nối</button>
+          </div>
+        </div>
+
+        <div class="agent-message evidence-badge" style="margin-top: 8px; display: block; font-size: 12px; color: var(--text-muted);">
+          ${keyInfo}${errorInfo}
+        </div>
+      </article>
+    `;
+  }).join("");
+
   document.querySelectorAll(".save-agent").forEach(button => button.addEventListener("click", saveAgent));
   document.querySelectorAll(".test-agent").forEach(button => button.addEventListener("click", testAgent));
 }
