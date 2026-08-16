@@ -20,6 +20,28 @@ class Settings:
     database_path: str = os.getenv("DATABASE_PATH", "farmops.db")
     mongodb_uri: str = os.getenv("MONGODB_URI", "")
     mongodb_db_name: str = os.getenv("MONGODB_DB_NAME", "farmops")
+    # LLM 1: Gemini 3.5 Flash-Lite (Dùng cho Irrigation Planning Agent)
+    gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
+    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+
+    # LLM 2: GPT-OSS 120B #1 (Dùng cho Resource Agent)
+    gpt_oss_api_key: str = os.getenv("GPT_OSS_API_KEY", os.getenv("LLM_API_KEY", os.getenv("OPENAI_API_KEY", "")))
+    gpt_oss_model: str = os.getenv("GPT_OSS_MODEL", os.getenv("LLM_MODEL", "openai/gpt-oss-120b"))
+    gpt_oss_base_url: str = os.getenv("GPT_OSS_BASE_URL", os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1"))
+
+    # LLM 3: GPT-OSS 120B #2 (Dùng cho Field IoT Agent)
+    gpt_oss_2_api_key: str = os.getenv("GPT_OSS_2_API_KEY", "")
+    gpt_oss_2_model: str = os.getenv("GPT_OSS_2_MODEL", "openai/gpt-oss-120b")
+    gpt_oss_2_base_url: str = os.getenv("GPT_OSS_2_BASE_URL", "https://openrouter.ai/api/v1")
+
+    # LLM 4: Gemini 3.5 #2 (Dùng cho Farm Coordinator Agent)
+    gemini_2_api_key: str = os.getenv("GEMINI_2_API_KEY", "")
+    gemini_2_model: str = os.getenv("GEMINI_2_MODEL", "gemini-3.5-flash")
+
+    # Legacy/Fallback compatibility
+    llm_api_key: str = os.getenv("LLM_API_KEY", os.getenv("OPENAI_API_KEY", ""))
+    llm_model: str = os.getenv("LLM_MODEL", "openai/gpt-oss-120b")
+    llm_base_url: str = os.getenv("LLM_BASE_URL", "https://openrouter.ai/api/v1")
 
 
 settings = Settings()

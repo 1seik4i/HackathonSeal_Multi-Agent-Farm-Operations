@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Literal
+
 import logging
 import time
 from pathlib import Path
@@ -54,7 +56,8 @@ def demo_ingest(message: TelemetryMessage) -> dict:
 
 @app.post("/api/demo/seed")
 def seed_demo_data() -> dict:
-    samples = [
+    DeviceCode = Literal["PH_01", "PUMP_01", "SOIL_01", "SUN_01", "TANK_01", "WEATHER_01"]
+    samples: list[tuple[DeviceCode, dict[str, float]]] = [
         ("SOIL_01", {"soil_moisture": 27, "temperature": 31.2}),
         ("WEATHER_01", {"temperature": 35, "humidity": 48}),
         ("PUMP_01", {"flow_rate": 18, "power": 430}),
