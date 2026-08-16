@@ -1,4 +1,12 @@
 const knownDevices = ["SOIL_01", "WEATHER_01", "PUMP_01", "PH_01", "TANK_01", "SUN_01"];
+const deviceFriendlyNames = {
+  SOIL_01: "SOIL_01 (Độ ẩm đất)",
+  WEATHER_01: "WEATHER_01 (Thời tiết)",
+  PUMP_01: "PUMP_01 (Máy bơm nước)",
+  PH_01: "PH_01 (Độ pH đất)",
+  TANK_01: "TANK_01 (Mức bồn chứa)",
+  SUN_01: "SUN_01 (Cường độ sáng)"
+};
 const SENSOR_TIMEOUT_SECONDS = 60;
 let agentConfigs = [];
 let latestTelemetry = {};
@@ -21,9 +29,9 @@ function formatTime(epoch) {
 }
 
 function metricLines(metrics) {
-  const labels = {soil_moisture:"Độ ẩm đất", soil_temperature:"Nhiệt độ đất", temperature:"Nhiệt độ", humidity:"Độ ẩm không khí", flow_rate:"Lưu lượng bơm", power:"Công suất", ph:"Độ pH", level:"Mực nước bồn", tank_level:"Mực nước bồn", lux:"Cường độ sáng", pump_status:"Trạng thái bơm"};
+  const labels = {soil_moisture:"Độ ẩm đất", soil_temperature:"Nhiệt độ đất", temperature:"Nhiệt độ không khí", humidity:"Độ ẩm không khí", flow_rate:"Lưu lượng dòng chảy", power:"Công suất hoạt động", ph:"Độ pH", level:"Mực nước", tank_level:"Mực nước bồn", lux:"Cường độ ánh sáng", pump_status:"Trạng thái bơm"};
   const units = {soil_moisture:"%", soil_temperature:"°C", temperature:"°C", humidity:"%", flow_rate:" L/min", power:" W", level:"%", tank_level:"%", lux:" lux"};
-  return Object.entries(metrics).map(([key,value]) => `<div class="metric"><small>${labels[key] || escapeHtml(key.replaceAll("_", " "))}</small><b>${key === "pump_status" ? (Number(value) > 0 ? "Sẵn sàng" : "Có lỗi") : `${escapeHtml(value)}${units[key] || ""}`}</b></div>`).join("");
+  return Object.entries(metrics).map(([key,value]) => `<div class="metric"><small>${labels[key] || escapeHtml(key.replaceAll("_", " "))}</small><b>${key === "pump_status" ? (Number(value) > 0 ? "Sẵn sàng" : "Có lỗi/Tắt") : `${escapeHtml(value)}${units[key] || ""}`}</b></div>`).join("");
 }
 
 function statusVi(status) {
@@ -104,12 +112,13 @@ async function loadTelemetry() {
   latestTelemetry = data;
   document.querySelector("#devices").innerHTML = knownDevices.map(device => {
     const item = data[device];
-    if (!item) return `<article class="device missing"><div class="device-title"><span class="device-icon">—</span><div><b>${device}</b><br><small>Chưa nhận dữ liệu cảm biến</small></div></div><div class="meter"><i style="width:8%"></i></div><div class="metrics"><span class="bad">THIẾU DỮ LIỆU</span></div><div class="evidence">Đang chờ dữ liệu</div></article>`;
+    const friendlyName = deviceFriendlyNames[device] || device;
+    if (!item) return `<article class="device missing"><div class="device-title"><span class="device-icon">—</span><div><b>${friendlyName}</b><br><small>Chưa nhận dữ liệu cảm biến</small></div></div><div class="meter"><i style="width:8%"></i></div><div class="metrics"><span class="bad">THIẾU DỮ LIỆU</span></div><div class="evidence">Đang chờ dữ liệu</div></article>`;
     const age = Math.max(0, Math.round(Date.now() / 1000 - item.timestamp));
     const freshness = age <= SENSOR_TIMEOUT_SECONDS ? "FRESH" : "OFFLINE";
     const source = item.source_type || "API";
     const strength = Math.max(8, Math.min(100, Number(item.metrics.soil_moisture ?? item.metrics.level ?? item.metrics.humidity ?? item.metrics.flow_rate ?? 55)));
-    return `<article class="device ${freshness === "FRESH" ? "fresh" : "missing"}"><div class="device-title"><span class="device-icon">●</span><div><b>${device === "PUMP_01" ? "PUMP_1" : device}</b><br><small>${source}${source === "MQTT" ? " · TRỰC TIẾP" : ""}</small></div></div><div class="meter"><i style="width:${strength}%"></i></div><div class="metrics">${metricLines(item.metrics)}</div><div class="evidence"><span class="${freshness === "FRESH" ? "ok" : "bad"}">${freshness === "FRESH" ? "DỮ LIỆU MỚI" : "MẤT KẾT NỐI"}</span><br>${age} giây trước<br>${formatTime(item.timestamp)}</div></article>`;
+    return `<article class="device ${freshness === "FRESH" ? "fresh" : "missing"}"><div class="device-title"><span class="device-icon">●</span><div><b>${friendlyName}</b><br><small>${source}${source === "MQTT" ? " · TRỰC TIẾP" : ""}</small></div></div><div class="meter"><i style="width:${strength}%"></i></div><div class="metrics">${metricLines(item.metrics)}</div><div class="evidence"><span class="${freshness === "FRESH" ? "ok" : "bad"}">${freshness === "FRESH" ? "DỮ LIỆU MỚI" : "MẤT KẾT NỐI"}</span><br>${age} giây trước<br>${formatTime(item.timestamp)}</div></article>`;
   }).join("");
   renderFarmMap();
   renderExecutiveSummary();
@@ -118,12 +127,12 @@ async function loadTelemetry() {
 
 async function drawSensorChart() {
   const specs = [
-    {device:"SOIL_01", metric:"soil_moisture", name:"Soil Moisture", unit:"%", axis:"Moisture (%)", color:"#5be2ad", domain:[0,100], decimals:1},
-    {device:"WEATHER_01", metric:"temperature", name:"Temperature", unit:"°C", axis:"Temperature (°C)", color:"#78c8ff", decimals:1},
-    {device:"PUMP_01", metric:"flow_rate", name:"Pump Flow", unit:" L/min", axis:"Flow (L/min)", color:"#ffc46b", zeroBased:true, decimals:1},
-    {device:"PH_01", metric:"ph", name:"Soil pH", unit:"", axis:"pH", color:"#e99cff", domain:[0,14], decimals:1},
-    {device:"TANK_01", metric:"level", name:"Tank Level", unit:"%", axis:"Level (%)", color:"#ff8791", domain:[0,100], decimals:1},
-    {device:"SUN_01", metric:"lux", name:"Light Intensity", unit:" lux", axis:"Illuminance (lux)", color:"#f6e05e", zeroBased:true, decimals:0},
+    {device:"SOIL_01", metric:"soil_moisture", name:"Độ ẩm đất", unit:"%", axis:"Độ ẩm (%)", color:"#10b981", domain:[0,100], decimals:1},
+    {device:"WEATHER_01", metric:"temperature", name:"Nhiệt độ không khí", unit:"°C", axis:"Nhiệt độ (°C)", color:"#3b82f6", decimals:1},
+    {device:"PUMP_01", metric:"flow_rate", name:"Lưu lượng bơm", unit:" L/min", axis:"Lưu lượng (L/min)", color:"#f59e0b", zeroBased:true, decimals:1},
+    {device:"PH_01", metric:"ph", name:"Độ pH của đất", unit:"", axis:"Độ pH", color:"#a855f7", domain:[0,14], decimals:1},
+    {device:"TANK_01", metric:"level", name:"Mực nước bồn", unit:"%", axis:"Mực nước (%)", color:"#ef4444", domain:[0,100], decimals:1},
+    {device:"SUN_01", metric:"lux", name:"Cường độ ánh sáng", unit:" lux", axis:"Cường độ sáng (lux)", color:"#eab308", zeroBased:true, decimals:0},
   ];
   const histories = await Promise.all(specs.map(spec => api(`/api/telemetry/history?device_id=${spec.device}&minutes=30&points=30`).catch(() => [])));
   const now = Date.now() / 1000;
@@ -142,7 +151,7 @@ function renderMiniChart(spec, history, windowStart, now) {
   const currentValue = Number.isFinite(liveValue) ? liveValue : samples.at(-1)?.value;
   const currentLabel = Number.isFinite(currentValue) ? `${formatChartValue(currentValue, spec)}${spec.unit}` : "—";
   const header = `<div class="mini-chart-head"><span class="mini-chart-id">${spec.device}</span><strong class="mini-chart-value">${currentLabel}</strong><span class="mini-chart-name">${spec.name}</span></div>`;
-  if (!samples.length) return `<article class="mini-chart">${header}<div class="chart-empty">Waiting for historical telemetry</div></article>`;
+  if (!samples.length) return `<article class="mini-chart">${header}<div class="chart-empty">Đang chờ dữ liệu lịch sử từ MQTT...</div></article>`;
 
   const values = samples.map(sample => sample.value);
   const [domainMin, domainMax] = chartDomain(spec, values);
@@ -153,9 +162,9 @@ function renderMiniChart(spec, history, windowStart, now) {
   const yTicks = [domainMax, (domainMin + domainMax) / 2, domainMin];
   const grid = yTicks.map((tick, tickIndex) => { const py = top + tickIndex * ((bottom - top) / 2); return `<line class="mini-chart-grid" x1="${left}" y1="${py}" x2="${right}" y2="${py}"/><text class="mini-chart-axis" x="${left-7}" y="${py+3}" text-anchor="end">${formatAxisValue(tick, spec)}</text>`; }).join("");
   const timeTicks = [windowStart, windowStart + 15 * 60, now];
-  const timeLabels = timeTicks.map((timestamp, tickIndex) => `<text class="mini-chart-axis" x="${x(timestamp)}" y="169" text-anchor="${tickIndex === 0 ? "start" : tickIndex === 2 ? "end" : "middle"}">${tickIndex === 2 ? "Now" : formatChartTime(timestamp)}</text>`).join("");
+  const timeLabels = timeTicks.map((timestamp, tickIndex) => `<text class="mini-chart-axis" x="${x(timestamp)}" y="169" text-anchor="${tickIndex === 0 ? "start" : tickIndex === 2 ? "end" : "middle"}">${tickIndex === 2 ? "Hiện tại" : formatChartTime(timestamp)}</text>`).join("");
   const circles = samples.map(sample => `<circle class="chart-point" tabindex="0" cx="${x(sample.timestamp).toFixed(1)}" cy="${y(sample.value).toFixed(1)}" r="2.6" fill="${spec.color}" data-chart-point data-time="${sample.timestamp}" data-value="${sample.value}" data-name="${spec.name}" data-unit="${escapeHtml(spec.unit)}" data-decimals="${spec.decimals}" aria-label="${spec.name}, ${formatChartValue(sample.value, spec)}${spec.unit}, ${formatChartTime(sample.timestamp)}"/>`).join("");
-  return `<article class="mini-chart">${header}<svg class="mini-chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${spec.name} readings during the last 30 minutes"><text class="mini-chart-axis" transform="translate(10 82) rotate(-90)" text-anchor="middle">${spec.axis}</text>${grid}<polyline class="mini-chart-line" points="${points}" stroke="${spec.color}"/>${circles}${timeLabels}</svg><div class="chart-tooltip" role="tooltip"></div></article>`;
+  return `<article class="mini-chart">${header}<svg class="mini-chart-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="Các chỉ số của ${spec.name} trong 30 phút qua"><text class="mini-chart-axis" transform="translate(10 82) rotate(-90)" text-anchor="middle">${spec.axis}</text>${grid}<polyline class="mini-chart-line" points="${points}" stroke="${spec.color}"/>${circles}${timeLabels}</svg><div class="chart-tooltip" role="tooltip"></div></article>`;
 }
 
 function chartDomain(spec, values) {
@@ -167,16 +176,16 @@ function chartDomain(spec, values) {
 }
 
 function formatChartValue(value, spec) {
-  return Number(value).toLocaleString("en-US", {minimumFractionDigits:spec.decimals, maximumFractionDigits:spec.decimals});
+  return Number(value).toLocaleString("vi-VN", {minimumFractionDigits:spec.decimals, maximumFractionDigits:spec.decimals});
 }
 
 function formatAxisValue(value, spec) {
   const decimals = spec.metric === "ph" ? 1 : Math.abs(value) >= 1000 ? 0 : Math.abs(value) < 10 ? 1 : 0;
-  return Number(value).toLocaleString("en-US", {maximumFractionDigits:decimals});
+  return Number(value).toLocaleString("vi-VN", {maximumFractionDigits:decimals});
 }
 
 function formatChartTime(epoch) {
-  return new Date(epoch * 1000).toLocaleTimeString("en-US", {hour:"2-digit", minute:"2-digit"});
+  return new Date(epoch * 1000).toLocaleTimeString("vi-VN", {hour:"2-digit", minute:"2-digit"});
 }
 
 function bindChartTooltips() {
@@ -190,8 +199,8 @@ function bindChartTooltips() {
       const pointerY = event.clientY || pointRect.top + pointRect.height / 2;
       tooltip.style.left = `${Math.max(76, Math.min(rect.width - 76, pointerX - rect.left))}px`;
       tooltip.style.top = `${Math.max(68, pointerY - rect.top)}px`;
-      const value = Number(point.dataset.value).toLocaleString("en-US", {minimumFractionDigits:Number(point.dataset.decimals), maximumFractionDigits:Number(point.dataset.decimals)});
-      tooltip.innerHTML = `<span class="chart-tooltip-time">${new Date(Number(point.dataset.time) * 1000).toLocaleTimeString("en-US", {hour:"numeric", minute:"2-digit"})}</span><b>${point.dataset.name}: ${value}${point.dataset.unit}</b>`;
+      const value = Number(point.dataset.value).toLocaleString("vi-VN", {minimumFractionDigits:Number(point.dataset.decimals), maximumFractionDigits:Number(point.dataset.decimals)});
+      tooltip.innerHTML = `<span class="chart-tooltip-time">${new Date(Number(point.dataset.time) * 1000).toLocaleTimeString("vi-VN", {hour:"numeric", minute:"2-digit"})}</span><b>${point.dataset.name}: ${value}${point.dataset.unit}</b>`;
       tooltip.classList.add("visible");
     };
     point.addEventListener("pointerenter", show);
@@ -220,17 +229,34 @@ function worstZoneStatus(ids) {
 
 function renderFarmMap(selectedId = null) {
   const svg = document.querySelector("#farm-map"); if (!svg) return;
-  const styles = {critical:{fill:"#3b1212",stroke:"#e24b4a",label:"CRITICAL"},stale:{fill:"#2d2200",stroke:"#ba7517",label:"STALE"},offline:{fill:"#2f1518",stroke:"#ff7c86",label:"OFFLINE"},normal:{fill:"#0d2620",stroke:"#1d9e75",label:"NORMAL"}};
-  const ids = ["SOIL_01","WEATHER_01","PUMP_01","PH_01","TANK_01","SUN_01"];
-  const labels = {SOIL_01:"SOIL_01",WEATHER_01:"WEATHER_01",PUMP_01:"PUMP_1",PH_01:"PH_01",TANK_01:"TANK_01",SUN_01:"SUN_01"};
-  const roles = {SOIL_01:"Soil",WEATHER_01:"Weather",PUMP_01:"Pump",PH_01:"Acidity",TANK_01:"Water tank",SUN_01:"Light"};
-  const positions = {SOIL_01:[155,155],WEATHER_01:[430,155],PUMP_01:[705,155],PH_01:[155,290],TANK_01:[430,290],SUN_01:[705,290]};
+  const styles = {
+    critical: { fill: "#fef2f2", stroke: "#ef4444", label: "NGUY CẤP" },
+    stale: { fill: "#fff7ed", stroke: "#ea580c", label: "DỮ LIỆU CŨ" },
+    offline: { fill: "#fafaf9", stroke: "#64748b", label: "MẤT KẾT NỐI" },
+    normal: { fill: "#f0fdf4", stroke: "#16a34a", label: "BÌNH THƯỜNG" }
+  };
+  const ids = ["SOIL_01", "WEATHER_01", "PUMP_01", "PH_01", "TANK_01", "SUN_01"];
+  const labels = { SOIL_01: "SOIL_01", WEATHER_01: "WEATHER_01", PUMP_01: "PUMP_01", PH_01: "PH_01", TANK_01: "TANK_01", SUN_01: "SUN_01" };
+  const roles = { SOIL_01: "Đất", WEATHER_01: "Thời tiết", PUMP_01: "Máy bơm", PH_01: "Độ pH", TANK_01: "Bồn chứa", SUN_01: "Ánh sáng" };
+  const positions = { SOIL_01: [155, 155], WEATHER_01: [430, 155], PUMP_01: [705, 155], PH_01: [155, 290], TANK_01: [430, 290], SUN_01: [705, 290] };
   const style = styles[worstZoneStatus(ids)];
-  const zoneSvg = `<g><rect x="20" y="24" width="820" height="372" rx="22" fill="${style.fill}" stroke="${style.stroke}" stroke-width="2"/><text x="46" y="58" fill="${style.stroke}" font-size="17" font-weight="700">Farm Zone 1</text><text x="46" y="79" fill="#9db5aa" font-size="11">6 connected sensor positions</text><rect x="720" y="42" width="92" height="27" rx="14" fill="${style.stroke}"/><text x="766" y="60" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">${style.label}</text><path d="M52 100 H808 M292 108 V365 M568 108 V365 M52 230 H808" stroke="#315348" stroke-width="1" stroke-dasharray="5 7" opacity=".55"/></g>`;
-  const pinSvg = Object.entries(positions).map(([id,[x,y]])=>{const state=sensorState(id);const color=state.freshness==="offline"?"#ff7c86":"#1d9e75";return `<g class="sensor-node" data-sensor="${id}" style="cursor:pointer"><rect class="sensor-card" x="${x-108}" y="${y-43}" width="216" height="86" rx="15" fill="#102b23" stroke="${state.freshness === "offline" ? "#ff7c86" : "#315348"}"/><circle cx="${x-75}" cy="${y}" r="16" fill="${color}" stroke="#effffb" stroke-width="2"/><text x="${x-48}" y="${y-5}" fill="#effffb" font-size="14" font-weight="700">${labels[id]}</text><text x="${x-48}" y="${y+15}" fill="${state.freshness === "offline" ? "#ff9ca4" : "#9db5aa"}" font-size="11">${roles[id]} · ${state.freshness.toUpperCase()}</text></g>`}).join("");
+  const zoneSvg = `<g><rect x="20" y="24" width="820" height="372" rx="22" fill="${style.fill}" stroke="${style.stroke}" stroke-width="2"/><text x="46" y="58" fill="${style.stroke}" font-size="17" font-weight="700">Vùng nông trại 1</text><text x="46" y="79" fill="#64748b" font-size="11">6 vị trí cảm biến được giám sát</text><rect x="720" y="42" width="92" height="27" rx="14" fill="${style.stroke}"/><text x="766" y="60" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">${style.label}</text><path d="M52 100 H808 M292 108 V365 M568 108 V365 M52 230 H808" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="5 7" opacity=".55"/></g>`;
+  const pinSvg = Object.entries(positions).map(([id, [x, y]]) => {
+    const state = sensorState(id);
+    const color = state.freshness === "offline" ? "#ef4444" : "#16a34a";
+    return `<g class="sensor-node" data-sensor="${id}" style="cursor:pointer"><rect class="sensor-card" x="${x - 108}" y="${y - 43}" width="216" height="86" rx="15" fill="#ffffff" stroke="${state.freshness === "offline" ? "#ef4444" : "#e2e8f0"}" stroke-width="1.5"/><circle cx="${x - 75}" cy="${y}" r="16" fill="${color}" stroke="#ffffff" stroke-width="2"/><text x="${x - 48}" y="${y - 5}" fill="#0f172a" font-size="14" font-weight="700">${labels[id]}</text><text x="${x - 48}" y="${y + 15}" fill="${state.freshness === "offline" ? "#ef4444" : "#64748b"}" font-size="11">${roles[id]} · ${state.freshness === 'fresh' ? 'MỚI' : 'MẤT KẾT NỐI'}</text></g>`
+  }).join("");
   let popup = "";
-  if (selectedId && positions[selectedId]) { const [x,y]=positions[selectedId]; const item=latestTelemetry[selectedId]; const state=sensorState(selectedId); const px=Math.max(30,Math.min(580,x>560?x-270:x+30)), py=Math.max(88,Math.min(205,y>230?y-180:y-58)); const age=item?Math.max(0,Math.round(Date.now()/1000-item.timestamp)):null; const ageLabel=age===null?"No data received":age<=1?"Updated just now":`Updated ${age} seconds ago`; popup=`<foreignObject class="sensor-popup" x="${px}" y="${py}" width="250" height="190"><div xmlns="http://www.w3.org/1999/xhtml" style="background:#0d292f;border:1px solid #315348;border-radius:13px;padding:12px;color:#effffb;font:12px Segoe UI,Arial;box-shadow:0 12px 28px rgba(0,0,0,.35)"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:14px">${labels[selectedId]}</b><span style="color:${state.freshness==='fresh'?'#5be2ad':'#ff9ca4'};font-weight:700">${state.freshness.toUpperCase()}</span></div><hr style="border:0;border-top:1px solid #315348;margin:8px 0"/><div class="metrics">${item?metricLines(item.metrics):'<span>Offline — no data</span>'}</div><div style="color:#9db5aa;margin-top:8px">${ageLabel}</div><button data-history="${selectedId}" style="margin-top:8px;padding:5px 9px">View history</button></div></foreignObject>`; }
-  if (!Object.keys(latestTelemetry).length) popup += `<text x="430" y="205" text-anchor="middle" fill="#a0c1bf" font-size="18">No telemetry available</text>`;
+  if (selectedId && positions[selectedId]) {
+    const [x, y] = positions[selectedId];
+    const item = latestTelemetry[selectedId];
+    const state = sensorState(selectedId);
+    const px = Math.max(30, Math.min(580, x > 560 ? x - 270 : x + 30)), py = Math.max(88, Math.min(205, y > 230 ? y - 180 : y - 58));
+    const age = item ? Math.max(0, Math.round(Date.now() / 1000 - item.timestamp)) : null;
+    const ageLabel = age === null ? "Chưa nhận dữ liệu" : age <= 1 ? "Vừa cập nhật tức thì" : `Cập nhật ${age} giây trước`;
+    popup = `<foreignObject class="sensor-popup" x="${px}" y="${py}" width="250" height="190"><div xmlns="http://www.w3.org/1999/xhtml" style="background:#ffffff;border:1px solid #cbd5e1;border-radius:13px;padding:12px;color:#0f172a;font:12px Segoe UI,Arial;box-shadow:0 12px 28px rgba(15,23,42,0.15)"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:14px">${labels[selectedId]}</b><span style="color:${state.freshness === 'fresh' ? '#16a34a' : '#ef4444'};font-weight:700">${state.freshness === 'fresh' ? 'MỚI' : 'MẤT KẾT NỐI'}</span></div><hr style="border:0;border-top:1px solid #e2e8f0;margin:8px 0"/><div class="metrics">${item ? metricLines(item.metrics) : '<span>Ngoại tuyến — không có dữ liệu</span>'}</div><div style="color:#64748b;margin-top:8px">${ageLabel}</div><button data-history="${selectedId}" style="margin-top:8px;padding:5px 9px">Xem lịch sử</button></div></foreignObject>`;
+  }
+  if (!Object.keys(latestTelemetry).length) popup += `<text x="430" y="205" text-anchor="middle" fill="#64748b" font-size="18">Không có dữ liệu cảm biến</text>`;
   svg.innerHTML = zoneSvg + pinSvg + popup;
   svg.querySelectorAll("[data-sensor]").forEach(pin=>pin.addEventListener("click",event=>{event.stopPropagation();renderFarmMap(pin.dataset.sensor)}));
   svg.querySelector("[data-history]")?.addEventListener("click",event=>{event.stopPropagation();showMapHistory(event.target.dataset.history)});
@@ -240,8 +266,8 @@ function renderFarmMap(selectedId = null) {
 async function showMapHistory(deviceId) {
   const history = await api(`/api/telemetry/history?device_id=${deviceId}&limit=5`);
   const target = document.querySelector("#map-history");
-  const displayId = deviceId === "PUMP_01" ? "PUMP_1" : deviceId;
-  target.innerHTML = `<div class="eyebrow">Sensor history</div><h2>${displayId}</h2><p class="muted">Latest five records</p>${history.length?history.map(row=>`<div class="history-row"><span>${formatTime(row.timestamp)}</span><span class="tag">${row.source_type}</span><span>${Object.entries(row.metrics).map(([k,v])=>`${escapeHtml(k.replaceAll("_", " "))}: ${escapeHtml(v)}`).join(" · ")}</span></div>`).join(""):"<p>No historical records available.</p>"}`;
+  const displayId = deviceId === "PUMP_01" ? "PUMP_01 (Máy bơm nước)" : deviceFriendlyNames[deviceId] || deviceId;
+  target.innerHTML = `<div class="eyebrow">Lịch sử cảm biến</div><h2>${displayId}</h2><p class="muted">5 bản ghi gần nhất</p>${history.length ? history.map(row => `<div class="history-row"><span>${formatTime(row.timestamp)}</span><span class="tag">${row.source_type}</span><span>${Object.entries(row.metrics).map(([k, v]) => `${escapeHtml(k.replaceAll("_", " "))}: ${escapeHtml(v)}`).join(" · ")}</span></div>`).join("") : "<p>Không có dữ liệu lịch sử.</p>"}`;
 }
 
 async function loadSnapshot() {
@@ -249,18 +275,29 @@ async function loadSnapshot() {
   const target = document.querySelector("#snapshot-summary");
   if (!target) return;
   if (snapshot.ready_for_ai) {
-    target.innerHTML = `<span class="ok">READY: Required live MQTT data is available.</span> Topic: <code>${escapeHtml(snapshot.topic)}</code>`;
+    target.innerHTML = `<span class="ok">SẴN SÀNG: Đã có dữ liệu MQTT trực tiếp.</span> Chủ đề (Topic): <code>${escapeHtml(snapshot.topic)}</code>`;
   } else {
-    target.innerHTML = `<span class="warn">LIVE AI IS NOT READY:</span> ${snapshot.issues.map(escapeHtml).join(" · ")}`;
+    target.innerHTML = `<span class="warn">AI TRỰC TIẾP CHƯA SẴN SÀNG:</span> ${snapshot.issues.map(escapeHtml).join(" · ")}`;
   }
 }
 
 function renderAgentSelector() {
-  document.querySelector("#agent-selector").innerHTML = agentConfigs.map(agent => `<label class="agent"><input type="checkbox" value="${agent.agent_id}" ${agent.enabled && agent.connection_status === "READY" ? "checked" : ""}> <b>${escapeHtml(agent.display_name)}</b><br><small>${escapeHtml(agent.role)}</small><p><span class="${agent.connection_status === "READY" ? "ok" : "warn"}">${agent.connection_status}</span> · ${escapeHtml(agent.provider)}/${escapeHtml(agent.model)}</p></label>`).join("");
+  document.querySelector("#agent-selector").innerHTML = agentConfigs.map(agent => `
+    <label class="agent">
+      <span style="display: flex; align-items: center; gap: 8px; font-weight: bold; color: var(--text);">
+        <input type="checkbox" value="${agent.agent_id}" ${agent.enabled && agent.connection_status === "READY" ? "checked" : ""}>
+        ${escapeHtml(agent.display_name)}
+      </span>
+      <span style="margin-left: 22px; font-size: 12px; color: var(--muted);">${escapeHtml(agent.role)}</span>
+      <span style="margin-left: 22px; font-size: 11px; margin-top: 2px; color: var(--muted);">
+        <span class="${agent.connection_status === "READY" ? "ok" : "warn"}">${agent.connection_status === 'READY' ? 'SẴN SÀNG' : statusVi(agent.connection_status)}</span> · ${escapeHtml(agent.provider)}/${escapeHtml(agent.model)}
+      </span>
+    </label>
+  `).join("");
   const updateSummary = () => {
     const selected = [...document.querySelectorAll("#agent-selector input:checked")].map(input => agentConfigs.find(agent => agent.agent_id === input.value)?.display_name).filter(Boolean);
     const target = document.querySelector("#ai-selection-summary");
-    if (target) target.textContent = selected.length ? `Selected AI: ${selected.join(" · ")}` : "No AI provider selected. Open AI Settings to choose providers.";
+    if (target) target.textContent = selected.length ? `AI đã chọn: ${selected.join(" · ")}` : "Chưa chọn nhà cung cấp AI. Hãy mở Cài đặt AI để chọn.";
   };
   document.querySelectorAll("#agent-selector input").forEach(input => input.addEventListener("change", updateSummary));
   updateSummary();

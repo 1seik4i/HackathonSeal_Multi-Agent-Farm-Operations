@@ -2,10 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>FarmOps AI | Smart Agriculture</title>
-  <style>
-    :root{--bg:#07171c;--card:#0d292f;--card2:#092027;--line:#1e4b51;--text:#effffb;--muted:#a0c1bf;--green:#5be2ad;--orange:#ffc46b;--red:#ff8791;--blue:#78c8ff}*{box-sizing:border-box}html,body{height:100%;overflow:hidden}body{margin:0;background:linear-gradient(135deg,#061318,#102c2e);color:var(--text);font:14px Inter,Segoe UI,Arial,sans-serif}main{width:min(100%,1180px);height:100vh;margin:auto;padding:16px;overflow:hidden}.eyebrow{color:var(--green);font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase}h1,h2,h3{margin:4px 0}h1{font-size:clamp(28px,4vw,42px)}h2{font-size:18px}h3{font-size:14px}p,.muted{color:var(--muted)}.topline{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.card{background:#0b2228dd;border:1px solid var(--line);border-radius:13px;padding:12px;margin:9px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:8px}.device,.agent,.action{padding:10px;background:var(--card2);border-radius:10px;border:1px solid var(--line)}.devices{display:grid;gap:6px}.device{display:grid;grid-template-columns:120px 1fr 165px 120px;align-items:center;gap:10px}.meter{height:8px;background:#173b48;border-radius:8px;overflow:hidden}.meter i{display:block;height:100%;background:var(--green);border-radius:8px}.device.stale .meter i{background:var(--orange)}.device.missing .meter i{background:var(--red)}.tabs{display:flex;gap:8px;margin:10px 0;padding:6px;background:#092027;border:1px solid var(--line);border-radius:12px}.tab,button{background:var(--green);color:#062218;border:0;border-radius:8px;padding:8px 11px;font-weight:800;cursor:pointer}.tab{background:#12363b;color:var(--muted)}.tab.active{background:var(--green);color:#062218}.panel{display:none;height:calc(100vh - 128px);overflow:auto;padding-right:4px}.panel.active{display:block}#operations{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}#operations>#actions{grid-column:1/-1}button.secondary{background:#173b48;color:var(--blue)}button.danger{background:#542833;color:#ffb2b9}button:disabled{opacity:.45;cursor:not-allowed}textarea,input,select{width:100%;margin:6px 0 8px;background:#071a20;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:8px;font:inherit}textarea{min-height:76px}.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.status{font-weight:700}.ok{color:var(--green)}.warn{color:var(--orange)}.bad{color:var(--red)}.tag{display:inline-block;border-radius:99px;padding:3px 7px;background:#173b48;color:var(--blue);font-size:11px;font-weight:700}.trace{border-left:2px solid var(--line);padding-left:10px;margin:7px 0}.trace p{margin:3px 0}.evidence{font-size:11px;color:var(--muted);word-break:break-word}.key-note{color:var(--orange);font-size:12px}.chart{height:185px;width:100%;background:#071a20;border-radius:10px}.farm-map{width:100%;max-height:calc(100vh - 235px);background:#0a0f0d;border-radius:12px;padding:10px}.map-legend{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin-top:8px}.pulse-ring{animation:sensor-pulse 1.4s ease-in-out infinite}@keyframes sensor-pulse{0%,100%{r:16;opacity:.5}50%{r:24;opacity:.05}}@media(max-width:680px){main{padding:10px}.topline{display:block}.tabs{position:sticky;top:0}.panel{height:calc(100vh - 132px)}.two,#operations{grid-template-columns:1fr}.device{grid-template-columns:1fr 1fr;gap:5px}.device .meter{grid-column:1/-1}.row button{flex:1 1 125px}.chart{height:155px}.farm-map{padding:4px;max-height:none}.map-legend{gap:8px}}
-  </style>
+  <title>FarmOps AI | Hệ thống Nông nghiệp Thông minh</title>
   <link rel="stylesheet" href="/dashboard.css">
 </head>
 <body><main class="app-shell">
@@ -31,6 +28,20 @@
       <div class="section-head"><div><div class="eyebrow">Dữ liệu trực tiếp</div><h2>Xu hướng cảm biến</h2><p class="muted">Lịch sử đo trong 30 phút gần nhất, lấy mẫu trực tiếp từ MQTT.</p></div><button id="refresh" class="secondary">Làm mới dữ liệu</button></div>
       <div id="sensor-trends" class="sensor-trends" aria-label="Xu hướng lịch sử của sáu cảm biến trực tiếp"></div>
       <div id="devices" class="devices"></div>
+      
+      <!-- Chú thích thông tin cảm biến dành cho Data Scientist -->
+      <div class="sensor-annotations">
+        <div class="eyebrow">Chú thích thông số</div>
+        <h3>Thông tin chi tiết các cảm biến</h3>
+        <div class="annotation-grid">
+          <div class="annotation-item"><strong>SOIL_01:</strong> Đo độ ẩm (%) và nhiệt độ đất (°C) sâu dưới rễ cây.</div>
+          <div class="annotation-item"><strong>WEATHER_01:</strong> Đo nhiệt độ không khí (°C) và độ ẩm môi trường (%).</div>
+          <div class="annotation-item"><strong>PUMP_01:</strong> Giám sát lưu lượng (L/min), công suất (W) và trạng thái của máy bơm.</div>
+          <div class="annotation-item"><strong>PH_01:</strong> Đo độ pH đất canh tác (ngưỡng tối ưu 5.5 - 7.5).</div>
+          <div class="annotation-item"><strong>TANK_01:</strong> Đo mực nước dự trữ trong bồn chứa cung cấp nước tưới (%).</div>
+          <div class="annotation-item"><strong>SUN_01:</strong> Đo cường độ bức xạ ánh sáng mặt trời (lux).</div>
+        </div>
+      </div>
     </section>
 
     <section class="card"><div class="section-head"><div><div class="eyebrow">Dữ liệu trình diễn</div><h2>Kịch bản nhanh</h2><p class="muted">Nạp bộ dữ liệu có kiểm soát để trình diễn giao diện. Dữ liệu mẫu không được dùng để kích hoạt quyết định AI trực tiếp.</p></div><div class="preset-bar"><button class="secondary demo" data-scenario="normal">Bình thường</button><button class="secondary demo" data-scenario="dry">Đất khô</button><button class="secondary demo" data-scenario="stale">Dữ liệu cũ</button><button class="secondary demo" data-scenario="pump_failure">Lỗi máy bơm</button></div></div></section>
