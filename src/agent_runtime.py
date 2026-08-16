@@ -15,13 +15,6 @@ from src.models import AgentConfigRequest, AgentConfigView
 load_dotenv()
 load_dotenv("api_keys.env")
 
-
-from dotenv import load_dotenv
-
-load_dotenv()
-load_dotenv("api_keys.env")
-
-
 AGENT_CATALOG = {
     "openai_agent": ("ChatGPT (OpenAI)", "GPT phân tích evidence và đưa ra nhận định có dẫn chứng."),
     "gemini_agent": ("Google Gemini", "Gemini phân tích vận hành dựa trên telemetry đã xác thực."),
@@ -31,13 +24,11 @@ AGENT_CATALOG = {
 
 
 def get_default_env_key(agent_id: str, provider: str = "") -> str:
-    # 1. Specific agent env override
     prefix = f"AGENT_{agent_id.upper()}"
     custom_prefix_key = os.getenv(f"{prefix}_API_KEY", "").strip()
     if custom_prefix_key:
         return custom_prefix_key
 
-    # 2. Agent ID specific env variable mappings
     if agent_id == "openai_agent":
         key = os.getenv("OPENAI_API_KEY", os.getenv("GPT_OSS_API_KEY", os.getenv("GPT_OSS_2_API_KEY", os.getenv("LLM_API_KEY", "")))).strip()
     elif agent_id == "gemini_agent":
@@ -52,7 +43,6 @@ def get_default_env_key(agent_id: str, provider: str = "") -> str:
     if key:
         return key
 
-    # 3. Provider specific fallbacks
     prov = (provider or "").lower()
     if prov == "openai":
         return os.getenv("OPENAI_API_KEY", os.getenv("GPT_OSS_API_KEY", os.getenv("GPT_OSS_2_API_KEY", os.getenv("LLM_API_KEY", "")))).strip()
@@ -63,7 +53,6 @@ def get_default_env_key(agent_id: str, provider: str = "") -> str:
     elif prov == "deepseek":
         return os.getenv("DEEPSEEK_API_KEY", "").strip()
 
-    # 4. Global fallback to any LLM key present in .env
     return os.getenv("GPT_OSS_API_KEY", os.getenv("GEMINI_API_KEY", os.getenv("GPT_OSS_2_API_KEY", os.getenv("GEMINI_2_API_KEY", "")))).strip()
 
 
@@ -152,11 +141,7 @@ class RealAgentGateway:
     def test_connection(self, agent_id: str) -> AgentConfigView:
         self._require_known(agent_id)
         config = self._configs[agent_id]
-<<<<<<< HEAD
-        eff_key = config.get_effective_api_key(agent_id)
-=======
         eff_key = config.get_effective_key(agent_id)
->>>>>>> dev
         if not config.enabled or not eff_key:
             config.connection_status = "NOT_CONFIGURED"
             config.last_error = "API key chưa được cấu hình hoặc provider chưa được bật."
@@ -164,11 +149,7 @@ class RealAgentGateway:
         config.connection_status = "TESTING"
         config.last_tested_at = time.time()
         try:
-<<<<<<< HEAD
-            self._request(config, eff_key, "Trả lời đúng một từ: READY.")
-=======
             self._request(config, "Trả lời đúng một từ: READY.", override_key=eff_key)
->>>>>>> dev
             config.connection_status = "READY"
             config.last_error = None
         except RuntimeError as error:
@@ -179,109 +160,74 @@ class RealAgentGateway:
     def analyze(self, agent_id: str, facts: dict[str, Any], scenario: str) -> dict[str, Any]:
         self._require_known(agent_id)
         config = self._configs[agent_id]
-<<<<<<< HEAD
-        eff_key = config.get_effective_api_key(agent_id)
-=======
         eff_key = config.get_effective_key(agent_id)
->>>>>>> dev
-        if not config.enabled or not eff_key or config.connection_status != "READY":
+        if not config.enabled or not eff_key:
             raise RuntimeError("AGENT_NOT_READY")
         prompt = (
-            "Bạn là một tác tử AI vận hành nông nghiệp thông minh. Hãy đọc kỹ dữ liệu cảm biến và yêu cầu từ người dùng để phân tích ngắn gọn, trả lời trực tiếp nhu cầu người dùng. Trả lời bằng tiếng Việt tối đa 100 từ.\n"
-            f"YÊU CẦU NGƯỜI DÙNG={scenario}\nSCENARIO_BOUNDS={scenario}\nFACTS_JSON={json.dumps(facts, ensure_ascii=False)}"
+            f"Bạn là một chuyên gia nông nghiệp AI ({config.provider}). "
+            f"Người dùng vừa gửi yêu cầu: \"{scenario}\".\n"
+            f"Dữ liệu cảm biến thời gian thực tại hiện trường: {json.dumps(facts, ensure_ascii=False)}.\n"
+            "Hãy đối thoại tự nhiên như một con người chuyên gia nông nghiệp với người dùng. "
+            "Phân tích ngắn gọn (2-3 câu), giải đáp trực tiếp yêu cầu người dùng dựa trên dữ liệu cảm biến thực tế trên. Không sử dụng câu văn mẫu."
         )
-<<<<<<< HEAD
-        return {"agent_id": agent_id, "provider": config.provider, "model": config.model, "analysis": self._request(config, eff_key, prompt)}
-
-    def _request(self, config: RuntimeConfig, api_key: str, prompt: str) -> str:
-=======
-        return {"agent_id": agent_id, "provider": config.provider, "model": config.model, "analysis": self._request(config, prompt, override_key=eff_key)}
+        analysis_res = self._request(config, prompt, override_key=eff_key)
+        return {"agent_id": agent_id, "provider": config.provider, "model": config.model, "analysis": analysis_res}
 
     def _request(self, config: RuntimeConfig, prompt: str, override_key: str = "") -> str:
         api_key = override_key or config.get_effective_key("")
->>>>>>> dev
+        if not api_key:
+            raise RuntimeError("Thiếu API key cho agent.")
+            
         try:
-            if config.provider == "openai":
-                url = "https://openrouter.ai/api/v1/chat/completions" if (api_key.startswith("gsk_") or "/" in config.model) else "https://api.openai.com/v1/chat/completions"
-                payload = {
-                    "model": config.model,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 180,
-                }
-                request = urllib.request.Request(
-<<<<<<< HEAD
-                    "https://api.openai.com/v1/responses",
-                    data=json.dumps({"model": config.model, "input": prompt, "max_output_tokens": 180}).encode("utf-8"),
-                    headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, method="POST",
-=======
-                    url,
-                    data=json.dumps(payload).encode("utf-8"),
-                    headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                    method="POST",
->>>>>>> dev
-                )
+            if api_key.startswith("gsk_") or "/" in config.model:
+                url = "https://openrouter.ai/api/v1/chat/completions"
+                headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+                model_name = config.model
+                if "/" not in model_name:
+                    model_name = f"openai/{config.model}" if config.provider == "openai" else f"google/{config.model}" if config.provider == "gemini" else f"anthropic/{config.model}" if config.provider == "anthropic" else f"deepseek/{config.model}"
+                payload = {"model": model_name, "messages": [{"role": "user", "content": prompt}], "max_tokens": 300}
+                request = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
                 with urllib.request.urlopen(request, timeout=15) as response:
                     body = json.loads(response.read().decode("utf-8"))
-                text = body.get("choices", [{}])[0].get("message", {}).get("content", "").strip() or body.get("output_text", "").strip()
-            elif config.provider == "gemini":
+                text = body.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+            elif config.provider == "gemini" or api_key.startswith("AIzaSy"):
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{config.model}:generateContent?key={api_key}"
-                request = urllib.request.Request(url, data=json.dumps({"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"maxOutputTokens": 180}}).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
+                payload = {"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"maxOutputTokens": 300}}
+                request = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
                 with urllib.request.urlopen(request, timeout=15) as response:
                     body = json.loads(response.read().decode("utf-8"))
                 text = body.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "").strip()
+            elif config.provider == "openai":
+                url = "https://api.openai.com/v1/chat/completions"
+                headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+                payload = {"model": config.model, "messages": [{"role": "user", "content": prompt}], "max_tokens": 300}
+                request = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
+                with urllib.request.urlopen(request, timeout=15) as response:
+                    body = json.loads(response.read().decode("utf-8"))
+                text = body.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
             elif config.provider == "anthropic":
-<<<<<<< HEAD
-                request = urllib.request.Request("https://api.anthropic.com/v1/messages", data=json.dumps({"model": config.model, "max_tokens": 180, "messages": [{"role": "user", "content": prompt}]}).encode("utf-8"), headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "Content-Type": "application/json"}, method="POST")
+                request = urllib.request.Request("https://api.anthropic.com/v1/messages", data=json.dumps({"model": config.model, "max_tokens": 300, "messages": [{"role": "user", "content": prompt}]}).encode("utf-8"), headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "Content-Type": "application/json"}, method="POST")
                 with urllib.request.urlopen(request, timeout=15) as response:
                     body = json.loads(response.read().decode("utf-8"))
                 text = body.get("content", [{}])[0].get("text", "").strip()
             elif config.provider == "deepseek":
-                request = urllib.request.Request("https://api.deepseek.com/chat/completions", data=json.dumps({"model": config.model, "messages": [{"role": "user", "content": prompt}], "max_tokens": 180}).encode("utf-8"), headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, method="POST")
+                request = urllib.request.Request("https://api.deepseek.com/chat/completions", data=json.dumps({"model": config.model, "messages": [{"role": "user", "content": prompt}], "max_tokens": 300}).encode("utf-8"), headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, method="POST")
                 with urllib.request.urlopen(request, timeout=15) as response:
                     body = json.loads(response.read().decode("utf-8"))
                 text = body.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-=======
-                if api_key.startswith("gsk_") or "/" in config.model:
-                    url = "https://openrouter.ai/api/v1/chat/completions"
-                    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-                    payload = {"model": config.model if "/" in config.model else f"anthropic/{config.model}", "messages": [{"role": "user", "content": prompt}], "max_tokens": 180}
-                    request = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
-                    with urllib.request.urlopen(request, timeout=15) as response:
-                        body = json.loads(response.read().decode("utf-8"))
-                    text = body.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                else:
-                    request = urllib.request.Request("https://api.anthropic.com/v1/messages", data=json.dumps({"model": config.model, "max_tokens": 180, "messages": [{"role": "user", "content": prompt}]}).encode("utf-8"), headers={"x-api-key": api_key, "anthropic-version": "2023-06-01", "Content-Type": "application/json"}, method="POST")
-                    with urllib.request.urlopen(request, timeout=15) as response:
-                        body = json.loads(response.read().decode("utf-8"))
-                    text = body.get("content", [{}])[0].get("text", "").strip()
-            elif config.provider == "deepseek":
-                if api_key.startswith("gsk_") or "/" in config.model:
-                    url = "https://openrouter.ai/api/v1/chat/completions"
-                    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
-                    payload = {"model": config.model if "/" in config.model else f"deepseek/{config.model}", "messages": [{"role": "user", "content": prompt}], "max_tokens": 180}
-                    request = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers, method="POST")
-                    with urllib.request.urlopen(request, timeout=15) as response:
-                        body = json.loads(response.read().decode("utf-8"))
-                    text = body.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
-                else:
-                    request = urllib.request.Request("https://api.deepseek.com/chat/completions", data=json.dumps({"model": config.model, "messages": [{"role": "user", "content": prompt}], "max_tokens": 180}).encode("utf-8"), headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}, method="POST")
-                    with urllib.request.urlopen(request, timeout=15) as response:
-                        body = json.loads(response.read().decode("utf-8"))
-                    text = body.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
->>>>>>> dev
             else:
                 raise RuntimeError("Provider không được hỗ trợ.")
         except urllib.error.HTTPError as error:
-            raise RuntimeError(f"Provider trả về HTTP {error.code}.") from error
-        except urllib.error.URLError:
-            raise RuntimeError("Không thể kết nối provider.")
+            err_msg = error.read().decode("utf-8", errors="ignore")
+            raise RuntimeError(f"HTTP {error.code}: {err_msg[:120]}") from error
+        except urllib.error.URLError as url_err:
+            raise RuntimeError(f"Không thể kết nối API provider ({url_err.reason}).") from url_err
+
         if not text:
-            raise RuntimeError("Provider không trả nội dung có thể sử dụng.")
+            raise RuntimeError("API Provider không trả về câu trả lời.")
         return text
 
     @staticmethod
     def _require_known(agent_id: str) -> None:
         if agent_id not in AGENT_CATALOG:
             raise KeyError(agent_id)
-
-

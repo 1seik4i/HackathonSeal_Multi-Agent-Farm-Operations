@@ -222,49 +222,39 @@ def create_coordination_run(request: CoordinationRunRequest) -> dict:
         raise HTTPException(409, {"code": "AGENT_NOT_READY", "agents": not_ready})
     run_id = store.create_run(request.model_dump())
     source_type = "MQTT" if any(x.get("source_type") == "MQTT" for x in snapshot.values()) else "DEMO"
-    soil_moisture = snapshot.get("SOIL_01", {}).get("metrics", {}).get("soil_moisture", 35)
-    tank_level = snapshot.get("TANK_01", {}).get("metrics", {}).get("level", 70)
-    pump_flow = snapshot.get("PUMP_01", {}).get("metrics", {}).get("flow_rate", 18)
-    temp = snapshot.get("WEATHER_01", {}).get("metrics", {}).get("temperature", 29)
-    ph = snapshot.get("PH_01", {}).get("metrics", {}).get("ph", 6.4)
-
-    rules_result = coordinator.handle(request.scenario_text, "Farm Operator")
-    created = rules_result["agent_trace"][-1]["created"]
-
-    req_lower = request.scenario_text.lower()
-    if "tưới" in req_lower or "nước" in req_lower:
-        if soil_moisture < 35:
-            ai_summary = f"Dựa trên yêu cầu '{request.scenario_text}', AI đã kiểm tra 6 cảm biến: Độ ẩm đất SOIL_01 là {soil_moisture}% (thấp < 35%), bể nước TANK_01 đạt {tank_level}% và máy bơm PUMP_01 sẵn sàng ({pump_flow} L/min). AI đã đề xuất Kế hoạch tưới tiêu thích hợp cho {request.target_zone} và gửi vào hàng đợi chờ bạn phê duyệt."
-        else:
-            ai_summary = f"Dựa trên yêu cầu '{request.scenario_text}', AI ghi nhận độ ẩm đất SOIL_01 hiện đạt {soil_moisture}% (đủ độ ẩm an toàn >= 35%). Bể nước đạt {tank_level}% và pH ở mức {ph}. Để đảm bảo tiết kiệm nước nông nghiệp, hệ thống đề xuất duy trì theo dõi và chưa cần bật máy bơm tưới."
-    elif "bơm" in req_lower or "thiết bị" in req_lower or "kiểm tra" in req_lower:
-        ai_summary = f"Dựa trên yêu cầu '{request.scenario_text}', AI đã rà soát toàn bộ thiết bị: Máy bơm PUMP_01 đang hoạt động với lưu lượng {pump_flow} L/min, độ ẩm đất {soil_moisture}%, pH {ph} và bồn nước {tank_level}%. Tất cả thiết bị đều hoạt động ổn định."
-    else:
-        ai_summary = f"Theo yêu cầu '{request.scenario_text}', AI đã tổng hợp bằng chứng từ 6 cảm biến Vùng 1 (Đất: {soil_moisture}%, Bồn: {tank_level}%, Bơm: {pump_flow} L/min, Nhiệt độ: {temp}°C, pH: {ph}). Hệ thống đã ghi nhận và chuẩn bị công việc vận hành phù hợp."
-
+    
     facts = {
         "telemetry_source": {"source_type": source_type, "topic": settings.mqtt_topic, "snapshot_at": time.time()},
         "telemetry": snapshot,
         "target_zone": request.target_zone
     }
 
+    # Execute real AI agents live via API
     real_agent_trace = []
+    successful_analyses = []
     for agent in request.selected_agents:
         try:
             trace = agent_gateway.analyze(agent, facts, request.scenario_text)
             real_agent_trace.append(trace)
-        except Exception:
-            display_name = configurations[agent].display_name
-            if "tưới" in req_lower:
-                analysis = f"[{display_name}] Phân tích yêu cầu '{request.scenario_text}': Độ ẩm đất {soil_moisture}%, bồn nước {tank_level}%, lưu lượng bơm {pump_flow} L/min. Đánh giá tính khả thi và độ an toàn đạt tiêu chuẩn."
-            else:
-                analysis = f"[{display_name}] Đã rà soát bằng chứng 6 cảm biến theo yêu cầu '{request.scenario_text}'. Độ ẩm đất {soil_moisture}%, pH {ph}, bồn nước {tank_level}%. Mọi thông số an toàn."
+            successful_analyses.append(f"[{configurations[agent].display_name}]: {trace['analysis']}")
+        except Exception as err:
+            err_msg = str(err)
             real_agent_trace.append({
                 "agent_id": agent,
                 "provider": configurations[agent].provider,
                 "model": configurations[agent].model,
-                "analysis": analysis
+                "analysis": f"[{configurations[agent].display_name} API Status]: {err_msg}"
             })
+
+    rules_result = coordinator.handle(request.scenario_text, "Farm Operator")
+    created = rules_result["agent_trace"][-1]["created"]
+
+    # Synthesize AI summary dynamically from real AI agent outputs or coordinator LLM executive summary
+    ai_summary = rules_result.get("ai_executive_summary")
+    if not ai_summary and successful_analyses:
+        ai_summary = " | ".join(successful_analyses)
+    elif not ai_summary:
+        ai_summary = rules_result.get("summary", "Hệ thống AI đã hoàn tất phân tích telemetry thực tế và đưa ra đề xuất.")
 
     result = {
         "run_id": run_id,
