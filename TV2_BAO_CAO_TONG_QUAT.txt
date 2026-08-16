@@ -1,0 +1,145 @@
+================================================================================
+FARMOPS TV2 - BAO CAO TONG QUAN KIENTRUC, CACH THUC HOAT DONG & CHI TIET TRIEN KHAI
+================================================================================
+
+Tài liệu này tổng hợp toàn bộ Kiến trúc hệ thống Multi-LLM Autonomous Agents, cách thức các Agent đàm phán tự chủ, bảng tổng hợp các thay đổi nâng cấp kỹ thuật mới nhất và hướng dẫn tích hợp dành cho nhóm TV2 (AI & Agent Engineers) trong dự án FarmOps.
+
+--------------------------------------------------------------------------------
+1. TONG QUAN NHUNG THAY DOI & NANG CAP KY THUAT DA THUC HIEN
+--------------------------------------------------------------------------------
+
+Trong đợt nâng cấp mới nhất, nhóm TV2 đã hoàn thành 5 hạng mục quan trọng:
+
+1. Xoa Bo Hoan Toan Nguong Gan Cung (soil < 35, sun > 40000):
+   - Thay thế các câu lệnh if-else tĩnh bằng Mô hình AI Suy luận Động (Pure Dynamic AI Reasoning).
+   - Gemini 3.5 Flash-Lite LLM đọc mốc thời gian (Tháng/Mùa trong năm), nhiệt độ, độ ẩm không khí, bức xạ ánh sáng để tự tính toán Ngưỡng Độ Ẩm Động (dynamic_threshold) và ra quyết định tưới.
+
+2. Cau Hinh 4 LLM Doc Lap Cho 4 Agent (4-LLM Architecture):
+   - FieldIoTAgent (LLM 3): Phân tích độ tươi thời gian thực cảm biến (FRESH <= 300s).
+   - IrrigationPlanningAgent (LLM 1): Gemini 3.5 Flash-Lite tự chủ lập kế hoạch nông học.
+   - ResourceAgent (LLM 2): GPT-OSS 120B thẩm định mực nước, pH, công suất bơm và đàm phán.
+   - FarmCoordinatorAgent (LLM 4): Gemini 3.5 tổng hợp báo cáo chỉ đạo điều hành cấp cao (ai_executive_summary).
+
+3. Quan Ly API Keys Trong File Doc Lap (api_keys.env):
+   - Tách riêng biệt file api_keys.env quản lý 4 API Key độc lập. File src/settings.py tự động nạp đồng thời .env và api_keys.env.
+
+4. Tich Hop Du Lieu Nong Nghiep Tu TV1 (MongoDB Atlas Pipeline):
+   - FieldIoTAgent đọc dữ liệu cảm biến thời gian thực của 6 thiết bị từ MongoDB Atlas via MongoTelemetryStore (với fallback SQLite tự động khi ngắt kết nối).
+
+5. Expose REST APIs Cho Frontend Render (TV3 Integration):
+   - Cung cấp API POST /api/coordinate trả về ai_executive_summary, agent_dialogue (cuộc hội thoại đối thoại đàm phán giữa các LLM Agents) và agent_trace (bảng xác minh 4 bước).
+
+--------------------------------------------------------------------------------
+2. KIEN TRUC CHI TIET 4 LLM AUTONOMOUS AGENTS
+--------------------------------------------------------------------------------
+
+                         ┌─────────────────────────────────────┐
+                         │    Quản Lý Trang Trại (Manager)     │
+                         └──────────────────┬──────────────────┘
+                                            │  POST /api/coordinate
+                                            ▼
+                           ┌──────────────────────────────────┐
+                           │      FarmCoordinatorAgent        │ ◄── [LLM 4: Gemini 3.5 #2]
+                           └────────────────┬─────────────────┘     Executive Summary Generator
+                                            │
+           ┌────────────────────────────────┼────────────────────────────────┐
+           │ (1. Observe Telemetry)         │ (2. LLM 1 Dynamic Reasoning)   │ (3. LLM 2 Infrastructure Audit)
+           ▼                                ▼                                ▼
+┌────────────────────┐           ┌────────────────────┐           ┌────────────────────┐
+│   FieldIoTAgent    │           │ IrrigationPlanning │           │   ResourceAgent    │
+│ (GPT-OSS 120B #2)  │           │       Agent        │           │ (GPT-OSS 120B #1)  │
+│ Giám sát Cảm biến  │           │(Gemini 3.5 Lite #1)│           │ Kiểm tra Bơm/Nước  │
+└─────────┬──────────┘           └─────────┬──────────┘           └─────────┬──────────┘
+          │                                │                                │
+          │                                ├────── Multi-LLM Dialogue ──────┤
+          │                                │ (Gemini #1 đàm phán GPT-OSS #1)│
+          │                                │                                │
+          │                                ▼                                │
+          │                        [Cuộc đối thoại trực tiếp giữa các LLMs] │
+          │                                │                                │
+          │                                ◄─────── (Đồng ý / Từ chối) ─────┘
+          └────────────────────────────────┼────────────────────────────────┘
+                                           │ (4. Create Action & Verify)
+                                           ▼
+                                ┌────────────────────┐
+                                │  FarmActionAgent   │ ➔ Save SQLite & Verify (`VERIFIED`)
+                                └──────────┬─────────┘
+                                           │
+                                           ▼
+                                ┌────────────────────┐
+                                │ Coordinator Summary│ ➔ ai_executive_summary (LLM 4)
+                                └────────────────────┘
+
+--------------------------------------------------------------------------------
+3. VAI TRO & CACH THUC HOAT DONG CU THE CUA TUNG AGENT
+--------------------------------------------------------------------------------
+
+3.1. FieldIoTAgent (Giám Sát & Phân Tích Cảm Biến AI):
+- LLM Đảm Nhiệm: OpenAI GPT-OSS 120B #2 (GPT_OSS_2_API_KEY).
+- Vai trò:
+  + Kết nối MongoDB Atlas (TV1 Integration) để đọc dữ liệu thời gian thực của 6 thiết bị: SOIL_01, WEATHER_01, PUMP_01, PH_01, TANK_01, SUN_01.
+  + So sánh mốc thời gian timestamp với ngưỡng stale_after_seconds = 300 để gắn nhãn FRESH (Tươi), STALE (Cũ) hoặc MISSING (Thiếu).
+  + Phát biểu thông điệp xác minh tính khả tin của dữ liệu gửi cho các Agent khác.
+
+3.2. IrrigationPlanningAgent (Chuyên Gia Nông Học AI):
+- LLM Đảm Nhiệm: Google Gemini 3.5 Flash-Lite #1 (GEMINI_API_KEY).
+- Vai trò:
+  + Xóa bỏ số gán cứng: Đọc mốc thời gian (Mùa trong năm), nhiệt độ không khí, độ ẩm không khí, bức xạ mặt trời (lux) và độ ẩm đất.
+  + Tự tính Ngưỡng Độ Ẩm Động (dynamic_threshold): Suy luận nông học để tự ra ngưỡng phù hợp với mùa/thời tiết hiện tại.
+  + Đưa ra quyết định (IRRIGATE / NO_IRRIGATION / NEEDS_FIELD_CHECK), đề xuất khung giờ tưới tối ưu (start_time), thời lượng tưới (duration_minutes) và phát biểu thông điệp đàm phán gửi cho Agent Hạ tầng.
+
+3.3. ResourceAgent (Kỹ Sư Quản Lý Hạ Tầng AI):
+- LLM Đảm Nhiệm: OpenAI GPT-OSS 120B #1 (GPT_OSS_API_KEY).
+- Vai trò:
+  + Nhận thông điệp đề xuất từ Gemini Agent #1, thẩm định các điều kiện hạ tầng vật lý:
+    * Mức nước bể chứa TANK_01 (Yêu cầu an toàn chống chạy khô: >= 25%).
+    * Nồng độ pH nước PH_01 (Yêu cầu an toàn cây trồng & ống tưới: 5.5 - 7.5).
+    * Lưu lượng & công suất máy bơm PUMP_01 (Yêu cầu an toàn: 10 - 25 L/min).
+  + Phát biểu câu đàm phán phản hồi lại Gemini Agent: ĐỒNG Ý (Approved) cấp nước hoặc TỪ CHỐI (Blocked) do vi phạm an toàn hạ tầng.
+
+3.4. FarmCoordinatorAgent (Trưởng Ban Điều Phối AI):
+- LLM Đảm Nhiệm: Google Gemini 3.5 #2 (GEMINI_2_API_KEY).
+- Vai trò:
+  + Thu thập toàn bộ cuộc đối thoại 3 bên (agent_dialogue) giữa Agent 1, Agent 2 và Agent 3.
+  + Tổng hợp kết quả và sinh ra Báo cáo tóm tắt chỉ đạo điều hành cấp cao (ai_executive_summary) từ 2-3 câu gửi thẳng cho Quản lý trang trại trên Frontend.
+
+3.5. FarmActionAgent (Khởi Tạo Lệnh & Tự Động Xác Minh Integrity):
+- Vai trò:
+  + Nếu kế hoạch được duyệt: Khởi tạo Lệnh IRRIGATION_PLAN với trạng thái PENDING_APPROVAL.
+  + Nếu cảm biến bị lỗi hoặc hạ tầng thiếu nước: Khởi tạo Lệnh FIELD_TASK yêu cầu cử cán bộ ra kiểm tra ngoài hiện trường.
+  + Gọi hàm verify_action() để tự động xác minh integrity của Lệnh và chuyển trạng thái sang VERIFIED.
+
+--------------------------------------------------------------------------------
+4. CAU HINH API KEYS TRONG FILE api_keys.env
+--------------------------------------------------------------------------------
+
+Tất cả API Keys được quản lý tập trung trong file api_keys.env:
+
+# LLM 1: Google Gemini 3.5 Flash-Lite #1 (Irrigation Planning Agent - Agronomist AI)
+GEMINI_API_KEY=AIzaSy...
+GEMINI_MODEL=gemini-3.5-flash-lite
+
+# LLM 2: OpenAI GPT-OSS 120B #1 (Resource Agent - Infrastructure AI)
+GPT_OSS_API_KEY=sk-or-v1-...
+GPT_OSS_MODEL=openai/gpt-oss-120b
+GPT_OSS_BASE_URL=https://openrouter.ai/api/v1
+
+# LLM 3: OpenAI GPT-OSS 120B #2 (Field IoT Agent - Data Analyst AI)
+GPT_OSS_2_API_KEY=sk-or-v2-...
+GPT_OSS_2_MODEL=openai/gpt-oss-120b
+GPT_OSS_2_BASE_URL=https://openrouter.ai/api/v1
+
+# LLM 4: Google Gemini 3.5 #2 (Farm Coordinator Agent - Executive Coordinator AI)
+GEMINI_2_API_KEY=AIzaSy...
+GEMINI_2_MODEL=gemini-3.5-flash
+
+--------------------------------------------------------------------------------
+5. DANH SACH CAC FILE MA NGUON DA DUOC NANG CAP
+--------------------------------------------------------------------------------
+
+1. src/agents.py: Xóa bỏ ngưỡng gán cứng, bổ sung hàm extract_json_from_llm(), cấu hình suy luận ngưỡng động cho IrrigationPlanningAgent, đàm phán 4 LLM Dialogue cho ResourceAgent và FarmCoordinatorAgent.
+2. src/settings.py: Bổ sung cấu hình load_dotenv("api_keys.env") và định nghĩa 4 slots LLM (gemini_model, gpt_oss_model, gpt_oss_2_model, gemini_2_model).
+3. api_keys.env: Tách file riêng quản lý toàn bộ 4 API Keys độc lập.
+4. doc/TV2_KIENTRUC_AGENT.md: Cập nhật sơ đồ kiến trúc 4 LLM.
+5. doc/TV2_TASKS_API_INTEGRATION.md: Cập nhật danh sách Tasks, API Inputs & Outputs cho Frontend.
+6. doc/TV2_THUYET_TRINH_DEMO.md: Kịch bản thuyết trình và slide hướng dẫn live demo trước Ban Giám Khảo.
