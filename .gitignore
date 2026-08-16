@@ -4,6 +4,7 @@ tests/_test_farmops.db
 __pycache__/
 *.py[cod]
 .venv/
+.venv-site-packages/
 doc/
 .pytest_cache/
 temp.txt

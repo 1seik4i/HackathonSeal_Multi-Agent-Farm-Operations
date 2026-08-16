@@ -10,7 +10,6 @@ from src.models import TelemetryMessage
 from src.settings import settings
 from src.storage import FarmStore
 
-
 log = logging.getLogger(__name__)
 
 
@@ -49,7 +48,7 @@ class MQTTIngestionClient:
                     from datetime import datetime
                     ts_str = timestamp.replace("Z", "+00:00")
                     timestamp = datetime.fromisoformat(ts_str).timestamp()
-                except Exception as error:
+                except ValueError as error:
                     log.warning("Failed to parse ISO-8601 timestamp '%s': %s", timestamp, error)
             normalized["timestamp"] = timestamp
             
@@ -83,7 +82,7 @@ class MQTTIngestionClient:
                 log.warning("data processing failed for %s: %s", normalized.device_code, proc_err)
 
             log.info("telemetry accepted from %s", normalized.device_code)
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001
             log.warning("telemetry rejected: %s", error)
 
     def start(self) -> bool:

@@ -3,6 +3,7 @@ from __future__ import annotations
 from time import time
 from typing import Any, Literal
 
+# pyrefly: ignore [missing-import]
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -28,10 +29,13 @@ class ManagerRequest(BaseModel):
 
 class Evidence(BaseModel):
     device_code: str
+    device_id: str | None = None
     metric: str
     value: float | str
     freshness: Literal["FRESH", "STALE", "MISSING"]
     reason: str
+    timestamp: float | None = None
+    agent: str | None = None
 
 
 class ActionRecord(BaseModel):

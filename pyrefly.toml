@@ -1,0 +1,16 @@
+# Pyrefly type checker configuration
+# https://pyrefly.org/configuration
+
+project_excludes = [
+    "**/__pyrefly_virtual__/**",
+    "**/.venv/**",
+    "**/__pycache__/**",
+]
+
+# Point Pyrefly at the pre-populated site-packages folder so it can
+# resolve third-party imports (pydantic, pytest, fastapi, etc.).
+"site-package-path" = [".venv-site-packages"]
+
+# Tell Pyrefly to resolve imports from the project root (same as Python at runtime),
+# so that `from src.models import ...` resolves correctly.
+search_path = ["."]

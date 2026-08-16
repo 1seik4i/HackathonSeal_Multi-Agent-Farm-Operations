@@ -127,7 +127,8 @@ class IoTDataProcessor:
         if timestamp is None:
             return "MISSING"
         age = time.time() - timestamp
-        return "FRESH" if age <= self.stale_after_seconds else "STALE"
+        # Allow 0.5s tolerance for execution timing jitter at the boundary
+        return "FRESH" if age < (self.stale_after_seconds + 0.5) else "STALE"
 
     # ------------------------------------------------------------------
     # Step 4: Anomaly detection

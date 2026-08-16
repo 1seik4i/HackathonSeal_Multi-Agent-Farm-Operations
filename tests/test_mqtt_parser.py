@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 
 import pytest
+from pydantic import ValidationError
 
 from src.mqtt_client import MQTTIngestionClient
 
@@ -103,7 +104,7 @@ class TestNormalize:
             "device_code": "INVALID_99",
             "metrics": {"value": 1},
         }
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             MQTTIngestionClient._normalize(raw)
 
     def test_empty_metrics_raises(self):
@@ -112,5 +113,5 @@ class TestNormalize:
             "device_code": "SOIL_01",
             "metrics": {},
         }
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             MQTTIngestionClient._normalize(raw)

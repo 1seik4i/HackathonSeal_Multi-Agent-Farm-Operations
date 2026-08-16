@@ -93,10 +93,37 @@ class FarmStore:
             payload=json.loads(row["payload_json"]), created_at=row["created_at"],
         )
 
-    def verify_action(self, action_id: str) -> ActionRecord | None:
+    def verify_action(
+        self,
+        action_id: str,
+        expected_type: str | None = None,
+        expected_zone: str | None = None,
+        expected_duration: int | None = None
+    ) -> ActionRecord | None:
         action = self.get_action(action_id)
         if action is None:
             return None
+
+        status = "VERIFIED"
+
+        # Compare action details
+        if expected_type is not None and action.action_type != expected_type:
+            status = "FAILED"
+
+        if action.action_type == "IRRIGATION_PLAN":
+            schedule = action.payload.get("schedule")
+            if not schedule:
+                status = "FAILED"
+            else:
+                if expected_zone is not None and schedule.get("target_zone") != expected_zone:
+                    status = "FAILED"
+                if expected_duration is not None and schedule.get("duration_minutes") != expected_duration:
+                    status = "FAILED"
+
+        # Check initial status is valid
+        if action.status not in ("PENDING_APPROVAL", "CREATED"):
+            status = "FAILED"
+
         with self._connect() as conn:
-            conn.execute("UPDATE actions SET status='VERIFIED' WHERE id=?", (action_id,))
+            conn.execute("UPDATE actions SET status=? WHERE id=?", (status, action_id))
         return self.get_action(action_id)

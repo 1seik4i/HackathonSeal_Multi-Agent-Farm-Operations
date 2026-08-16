@@ -139,6 +139,7 @@ def low_resource_payloads() -> list[dict]:
 def publish_mqtt(payloads: list[dict], topic: str, host: str, port: int,
                  username: str, password: str, use_tls: bool) -> None:
     """Publish payloads to the MQTT broker."""
+    # pyrefly: ignore [missing-import]
     import paho.mqtt.client as mqtt_lib
 
     client = mqtt_lib.Client(mqtt_lib.CallbackAPIVersion.VERSION2, client_id="farmops-simulator")
@@ -187,7 +188,7 @@ def publish_http(payloads: list[dict], api_url: str) -> None:
         try:
             with urllib.request.urlopen(req, timeout=5) as resp:
                 log.info("HTTP %s → %s  %s", resp.status, body["device_code"], resp.read().decode())
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001
             log.error("HTTP POST failed for %s: %s", body["device_code"], err)
 
 
@@ -216,8 +217,9 @@ def main() -> None:
 
     # Try to load .env values
     try:
-        from dotenv import load_dotenv
         import os
+
+        from dotenv import load_dotenv
         load_dotenv()
         if not args.host:
             args.host = os.getenv("MQTT_BROKER_HOST", "")
