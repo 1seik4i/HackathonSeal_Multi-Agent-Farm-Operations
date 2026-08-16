@@ -415,7 +415,8 @@ class FarmActionAgent:
                 {
                     "schedule": irrigation["schedule"], 
                     "evidence": evidence, 
-                    "resource_check": resources
+                    "resource_check": resources,
+                    "reason": f"Kế hoạch tưới tự động Khu A (Vùng 1): Bắt đầu lúc {irrigation['schedule'].get('start_time', '17:30')} trong {irrigation['schedule'].get('duration_minutes', 20)} phút nhằm bổ sung độ ẩm đất đạt ngưỡng 45% - 65% và bảo vệ hệ thống bơm."
                 }
             )
         else:

@@ -260,12 +260,12 @@ async function loadTelemetry() {
 
 async function drawSensorChart() {
   const specs = [
-    { device: "SOIL_01", metric: "soil_moisture", name: "Độ ẩm đất", unit: "%", axis: "Độ ẩm (%)", color: "#10b981", domain: [0, 100], decimals: 1 },
-    { device: "WEATHER_01", metric: "temperature", name: "Nhiệt độ không khí", unit: "°C", axis: "Nhiệt độ (°C)", color: "#3b82f6", decimals: 1 },
-    { device: "PUMP_01", metric: "flow_rate", name: "Lưu lượng bơm", unit: " L/min", axis: "Lưu lượng (L/min)", color: "#f59e0b", zeroBased: true, decimals: 1 },
-    { device: "PH_01", metric: "ph", name: "Độ pH của đất", unit: "", axis: "Độ pH", color: "#a855f7", domain: [0, 14], decimals: 1 },
-    { device: "TANK_01", metric: "level", name: "Mực nước bồn", unit: "%", axis: "Mực nước (%)", color: "#ef4444", domain: [0, 100], decimals: 1 },
-    { device: "SUN_01", metric: "lux", name: "Cường độ ánh sáng", unit: " lux", axis: "Cường độ sáng (lux)", color: "#eab308", zeroBased: true, decimals: 0 },
+    { device: "SOIL_01", metric: "soil_moisture", name: "Độ ẩm đất", unit: "%", axis: "Độ ẩm (%)", color: "#2563eb", domain: [0, 100], decimals: 1 },
+    { device: "WEATHER_01", metric: "temperature", name: "Nhiệt độ không khí", unit: "°C", axis: "Nhiệt độ (°C)", color: "#2563eb", decimals: 1 },
+    { device: "PUMP_01", metric: "flow_rate", name: "Lưu lượng bơm", unit: " L/min", axis: "Lưu lượng (L/min)", color: "#2563eb", zeroBased: true, decimals: 1 },
+    { device: "PH_01", metric: "ph", name: "Độ pH của đất", unit: "", axis: "Độ pH", color: "#2563eb", domain: [0, 14], decimals: 1 },
+    { device: "TANK_01", metric: "level", name: "Mực nước bồn", unit: "%", axis: "Mực nước (%)", color: "#2563eb", domain: [0, 100], decimals: 1 },
+    { device: "SUN_01", metric: "lux", name: "Cường độ ánh sáng", unit: " lux", axis: "Cường độ sáng (lux)", color: "#2563eb", zeroBased: true, decimals: 0 },
   ];
   const histories = await Promise.all(specs.map(spec => api(`/api/telemetry/history?device_id=${spec.device}&minutes=30&points=30`).catch(() => [])));
   const now = Date.now() / 1000;
@@ -549,7 +549,16 @@ async function loadActions() {
     else if (isRejected) { statusTagClass = "tag tag-danger"; statusText = "ĐÃ TỪ CHỐI"; }
 
     const typeLabel = actionTypeVi(action.action_type);
-    const reasonText = action.payload?.reason || action.payload?.schedule?.target_zone || "Xem chi tiết bằng chứng trong hồ sơ công việc.";
+    let reasonText = action.payload?.reason;
+    if (!reasonText || reasonText === "Khu A" || reasonText === "FARM_ZONE_1") {
+      if (action.action_type === "IRRIGATION_PLAN") {
+        const start = action.payload?.schedule?.start_time || "17:30";
+        const dur = action.payload?.schedule?.duration_minutes || 20;
+        reasonText = `Kế hoạch tưới tự động Khu A (Vùng 1): Thực hiện lúc ${start} trong ${dur} phút nhằm duy trì độ ẩm đất tối ưu 45% - 65% và bảo vệ máy bơm.`;
+      } else {
+        reasonText = "Nhiệm vụ kiểm tra hiện trường: Rà soát trạng thái hoạt động của cảm biến và nguồn nước.";
+      }
+    }
 
     return `
       <article class="action-card">
