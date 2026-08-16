@@ -20,22 +20,21 @@
             phê duyệt của con người.</p>
         </div>
       </div>
-      <div class="header-status">
+      <div class="header-status" style="display: none;">
         <div id="health" class="tag">Đang kiểm tra trạng thái hệ thống...</div>
       </div>
     </header>
     <nav class="tabs" aria-label="Điều hướng chính"><button class="tab active" data-tab="overview">Vận
-        hành</button><button class="tab" data-tab="map">Bản đồ nông trại</button><button class="tab"
-        data-tab="agents">Cài đặt AI</button></nav>
+        hành</button><button class="tab" data-tab="agents">Cài đặt AI</button></nav>
 
     <section id="overview" class="panel active">
       <div class="stack">
         <section class="card executive-card">
           <div class="section-head">
             <div>
-              <div class="eyebrow">Tổng quan điều hành</div>
+              <!-- <div class="eyebrow">Tổng quan điều hành</div> -->
               <h2>Trạng thái nông trại</h2>
-              <p class="muted">Sức khỏe vận hành, rủi ro quyết định và khối lượng phê duyệt theo thời gian thực.</p>
+              <!-- <p class="muted">Sức khỏe vận hành, rủi ro quyết định và khối lượng phê duyệt theo thời gian thực.</p> -->
             </div><span id="snapshot-updated" class="evidence">Đang chờ dữ liệu cảm biến</span>
           </div>
           <div class="kpi-grid">
@@ -83,48 +82,40 @@
           </div>
         </section>
 
-        <section class="card">
-          <div class="section-head">
-            <div>
-              <div class="eyebrow">Dữ liệu trình diễn</div>
-              <h2>Kịch bản nhanh</h2>
-              <p class="muted">Nạp bộ dữ liệu có kiểm soát để trình diễn giao diện. Dữ liệu mẫu không được dùng để kích
-                hoạt quyết định AI trực tiếp.</p>
-            </div>
-            <div class="preset-bar"><button class="secondary demo" data-scenario="normal">Bình thường</button><button
-                class="secondary demo" data-scenario="dry">Đất khô</button><button class="secondary demo"
-                data-scenario="stale">Dữ liệu cũ</button><button class="secondary demo" data-scenario="pump_failure">Lỗi
-                máy bơm</button></div>
-          </div>
-        </section>
 
         <section id="operations" class="workspace-grid">
           <article class="card">
-            <div class="eyebrow">Kịch bản vận hành</div>
-            <h2>Yêu cầu quyết định · Vùng nông trại 1</h2>
-            <p class="muted">Kịch bản xác định các ràng buộc vận hành. Mọi quyết định phải dẫn chứng dữ liệu MQTT còn
-              mới từ vùng canh tác.</p>
-            <p id="ai-selection-summary" class="tag">Chưa chọn nhà cung cấp AI. Mở Cài đặt AI để lựa chọn.</p><label
-              for="scenario">Kịch bản và ràng buộc vận hành</label><textarea
-              id="scenario">Ưu tiên tiết kiệm nước. Chỉ tưới Vùng nông trại 1 khi độ ẩm đất thấp, mực nước bồn trên 30% và máy bơm không có dấu hiệu bất thường.</textarea>
-            <div class="row"><button id="run">Chạy phối hợp AI</button><span id="run-status" class="status warn"></span>
+            <div class="eyebrow">Trợ lý AI Nông trại</div>
+            <h2>Yêu cầu Gợi ý Công việc · Vùng 1</h2>
+            <p class="muted">AI sẽ đọc dữ liệu trực tiếp từ MQTT và phối hợp nhiều tác tử (Agent) để phân tích, lập kế hoạch và đề xuất công việc.</p>
+            <p id="ai-selection-summary" class="tag">Chưa chọn nhà cung cấp AI. Mở Cài đặt AI để lựa chọn.</p>
+            
+            <label for="scenario" style="margin-top: 10px;">Nhập yêu cầu hoặc chọn kịch bản mẫu:</label>
+            <div class="preset-bar" style="margin-bottom: 8px;">
+              <button class="secondary prompt-btn" data-prompt="Hãy chuẩn bị kế hoạch tưới cho khu A trong hôm nay và giải thích dữ liệu đã sử dụng. Ưu tiên tiết kiệm nước, chỉ tưới khi độ ẩm đất thấp và mực nước bồn trên 30%.">Lập kế hoạch tưới</button>
+              <button class="secondary prompt-btn" data-prompt="Hãy kiểm tra phiên tưới hiện tại và chuẩn bị công việc cần thực hiện nếu kết quả không như mong đợi.">Kiểm tra hoạt động</button>
+              <button class="secondary prompt-btn" data-prompt="Dữ liệu một số cảm biến vừa ngừng cập nhật. Hãy tiếp tục lập kế hoạch công việc cho đội ngoài hiện trường.">Xử lý gián đoạn</button>
+            </div>
+            <textarea id="scenario">Hãy chuẩn bị kế hoạch tưới cho khu A trong hôm nay và giải thích dữ liệu đã sử dụng. Ưu tiên tiết kiệm nước, chỉ tưới khi độ ẩm đất thấp và mực nước bồn trên 30%.</textarea>
+            
+            <div class="row" style="margin-top: 10px;">
+              <button id="run">Yêu cầu AI phân tích & Đề xuất</button>
+              <span id="run-status" class="status warn"></span>
             </div>
           </article>
           <article class="card">
-            <div class="eyebrow">Bằng chứng và xác minh</div>
-            <h2>Kết quả quyết định AI</h2>
-            <div id="run-result" class="result-empty">Hãy cấu hình ít nhất ba nhà cung cấp AI sẵn sàng, nhập kịch bản và
-              chạy khi dữ liệu MQTT trực tiếp khả dụng.</div>
+            <div class="eyebrow">Bằng chứng và phân tích</div>
+            <h2>Gợi ý từ AI (Phân tích & Lập kế hoạch)</h2>
+            <div id="run-result" class="result-empty">Hệ thống đang chờ yêu cầu. AI sẽ giải thích quá trình phân tích dữ liệu MQTT và đưa ra các đề xuất công việc tại đây.</div>
           </article>
         </section>
 
         <section id="actions" class="card">
           <div class="section-head">
             <div>
-              <div class="eyebrow">Con người trong quy trình</div>
-              <h2>Kế hoạch, nhiệm vụ và phê duyệt</h2>
-              <p class="muted">Xem bằng chứng, phê duyệt kế hoạch quan trọng và xác minh dữ liệu phản hồi từ thiết bị
-                chấp hành.</p>
+              <div class="eyebrow">Con người ra quyết định cuối cùng</div>
+              <h2>Phê duyệt & Điều chỉnh Công việc</h2>
+              <p class="muted">Duyệt qua các công việc do AI đề xuất. Bạn có thể đồng ý, từ chối, hoặc ghi chú chỉnh sửa trước khi giao việc cho nhân sự ngoài hiện trường.</p>
             </div><button id="refresh-actions" class="secondary">Làm mới tác vụ</button>
           </div>
           <div id="actions-list" class="grid"></div>
