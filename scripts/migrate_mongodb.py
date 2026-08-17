@@ -31,12 +31,13 @@ logging.basicConfig(
 log = logging.getLogger("mongo-migrate")
 
 # Default source URI from current project
-DEFAULT_SOURCE_URI = "mongodb+srv://username321:authenpass123@farmops-cluster.smcj9lz.mongodb.net/?appName=farmops-cluster"
+# Default source URI (must be specified via MONGODB_URI in .env or --source-uri CLI argument)
+DEFAULT_SOURCE_URI = ""
 DEFAULT_DB_NAME = "farmops"
 
 
 def get_source_uri() -> str:
-    """Read source URI from .env if available, else fallback to default."""
+    """Read source URI from .env if available, fallback to empty string."""
     try:
         import os
         from dotenv import load_dotenv
