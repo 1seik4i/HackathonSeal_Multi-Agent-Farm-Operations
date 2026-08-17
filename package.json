@@ -1,0 +1,27 @@
+{
+  "name": "farmops-ai",
+  "version": "2.0.0",
+  "description": "FarmOps AI - Multi-Agent Smart Agriculture System (Node.js & React)",
+  "type": "module",
+  "main": "server/app.js",
+  "scripts": {
+    "start": "node server/app.js",
+    "server": "node server/app.js",
+    "client": "npm --prefix client run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "build": "npm --prefix client run build",
+    "build:start": "npm run build && npm start"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongodb": "^6.8.0",
+    "mqtt": "^5.8.0",
+    "sqlite3": "^5.1.7",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

@@ -5,4 +5,9 @@ farmops.db
 __pycache__/
 *.py[cod]
 .git/
-
+node_modules/
+client/node_modules/
+mongodb_backup.json
+doc/
+*.md
+!README.md
